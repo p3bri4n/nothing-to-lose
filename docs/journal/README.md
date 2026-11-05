@@ -9,6 +9,7 @@ Une entrée par session de travail, nommée `AAAA-MM-JJ-sujet.md` (plusieurs ses
 | Date | Sujet | Jalon |
 |---|---|---|
 | 2026-11-05 | [Conception initiale et squelette du dépôt](2026-11-05-conception.md) | avant P0 |
+| 2026-11-05 | [Préparation de l'environnement (après-midi)](2026-11-05-pp-preparation.md) | PP |
 
 ## Modèle d'entrée
 
