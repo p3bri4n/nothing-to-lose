@@ -10,5 +10,29 @@
       "Read(**/*.tfvars)",
       "Read(**/*.tfstate)"
     ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/tools/hooks/session_start.py\"",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "resume",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/tools/hooks/session_start.py\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
   }
 }

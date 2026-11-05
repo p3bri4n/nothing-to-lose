@@ -9,3 +9,4 @@ Une note de plus de trois mois sur un sujet qui évolue vite (versions, API, pri
 | Date | Sujet | Confiance |
 |---|---|---|
 | 2026-11-05 | [Outillage du jalon PP (mise, Rust, Node, Python, outils CI, hooks Claude Code, GitHub, Terraform)](2026-11-05-outillage-pp.md) | Moyen à élevé selon les points (voir la note) |
+| 2026-11-05 | [Hook SessionStart de Claude Code : affichage utilisateur, format JSON, configuration](2026-11-05-hook-sessionstart.md) | Élevé (format, routage) ; moyen à faible (affichage de systemMessage en TUI) |

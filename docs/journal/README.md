@@ -4,6 +4,8 @@ Une entrée par session de travail, nommée `AAAA-MM-JJ-sujet.md` (plusieurs ses
 
 **Lire les deux ou trois dernières entrées en début de session** : c'est le moyen de reprendre le fil.
 
+**Titres de sections obligatoires** : le hook `SessionStart` (`tools/hooks/session_start.py`, voir [`../technique/hook-session-start.md`](../technique/hook-session-start.md)) lit la dernière entrée et affiche sa section `## Prochaines étapes` au démarrage de Claude Code, et `## Problèmes et points ouverts` dans le contexte du modèle. Ces deux titres doivent rester exactement tels quels (niveau 2, même graphie). Une section absente est simplement omise.
+
 ## Index
 
 | Date | Sujet | Jalon |

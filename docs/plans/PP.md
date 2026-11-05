@@ -300,7 +300,7 @@ Chaque étape se vérifie indépendamment. La sous-commande de `verify_pp.sh` qu
 - Signature des commits, CODEOWNERS, file de fusion, convention de commits imposée par un outil.
 - Renovate ou Dependabot pour mise et les actions ; retrait des actions devenues inutiles dans `actions.tf`.
 - Claude Code dans GitHub Actions.
-- Hooks Claude Code autres que le formatage et la garde Bash.
+- Hooks Claude Code autres que le formatage et la garde Bash. **Exception ajoutée à la demande de l'utilisateur (2026-11-05)** : le hook `SessionStart` (`tools/hooks/session_start.py`) qui résume l'état du projet à l'ouverture de Claude Code, documenté dans [`../technique/hook-session-start.md`](../technique/hook-session-start.md). Il n'était pas prévu par ce plan.
 - Vérifications lourdes au moment du push (`cargo test`, etc.).
 
 ## 9. Mises à jour documentaires

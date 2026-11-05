@@ -10,6 +10,7 @@
 - E2 faite, relue par `architecte` (OK avec réserves). Contenu : action `jdx/mise-action@*` autorisée, label `jalon:PP`, `.terraform.lock.hcl` (plateformes linux_amd64 et darwin_arm64). Remplacement de l'attribut obsolète `vulnerability_alerts` par la ressource `github_repository_vulnerability_alerts` (« E2 bis », accepté par l'utilisateur). `terraform fmt -check` et `terraform validate` passent sans avertissement.
 - Renommage du jeu en « Nothing To Lose » (identifiant `nothing-to-lose`) et mise à jour de la base documentaire.
 - Commit `50eae26` sur `main`, en local : rien n'est poussé.
+- Hook `SessionStart` ajouté à la demande de l'utilisateur, hors périmètre de PP (`tools/hooks/session_start.py`, configuré dans `.claude/settings.json`) : il affiche à l'ouverture de Claude Code le dernier journal, ses prochaines étapes et l'état Git. Documentation : [`docs/technique/hook-session-start.md`](../technique/hook-session-start.md).
 - Contrôles : `gitleaks` sur l'index, aucun secret détecté. `tools/check_links.py` : 0 lien cassé.
 
 ## Résultats
@@ -63,3 +64,4 @@ Choix mineurs pris en autonomie :
    - `gh auth login`.
 2. Ensuite, E3 (première PR : `bypass_mode = "pull_request"`), puis un nouveau `tf-apply` par l'utilisateur. Puis E4 à E12, une PR par étape (regroupements possibles, voir `docs/plans/PP.md` §4 et risque R17).
 3. Créer le jeton à granularité fine des agents après le `tf-apply`.
+4. Tester le hook `SessionStart` à la prochaine ouverture de Claude Code (affichage de `systemMessage` non vérifié, voir [`docs/technique/hook-session-start.md`](../technique/hook-session-start.md)). Si le message n'apparaît pas, demander « où en est-on ? » pour vérifier le contexte injecté.

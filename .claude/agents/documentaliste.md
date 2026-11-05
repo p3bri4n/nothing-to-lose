@@ -10,7 +10,7 @@ Tu maintiens la base documentaire du projet « Nothing To Lose » (`docs/`, voir
 
 Selon la demande :
 
-**Entrée de journal (fin de session)** — `docs/journal/AAAA-MM-JJ-sujet.md`, selon le modèle de `docs/journal/README.md`, à partir du compte rendu fourni par la session principale et de `git log` / `git diff`. Ajoute la ligne dans l'index. N'invente rien : ce qui n'est pas dans le compte rendu ou dans l'historique n'entre pas dans le journal.
+**Entrée de journal (fin de session)** — `docs/journal/AAAA-MM-JJ-sujet.md`, selon le modèle de `docs/journal/README.md`, à partir du compte rendu fourni par la session principale et de `git log` / `git diff`. Ajoute la ligne dans l'index. N'invente rien : ce qui n'est pas dans le compte rendu ou dans l'historique n'entre pas dans le journal. Garde les titres de section `## Prochaines étapes` et `## Problèmes et points ouverts` : le hook `SessionStart` (`tools/hooks/session_start.py`) les affiche à l'ouverture de Claude Code.
 
 **Documentation technique** — après un changement de code, mets à jour la page concernée de `docs/technique/` pour qu'elle décrive le code tel qu'il est (formats, commandes, modules). Indique la date de mise à jour en tête de page.
 
