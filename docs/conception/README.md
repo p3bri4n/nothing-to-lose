@@ -1,6 +1,6 @@
-# Démonstrateur IA « Say Again » — Dossier de conception
+# Démonstrateur IA « Nothing To Lose » — Dossier de conception
 
-**Say Again** — simulateur urbain de combat entre survivants humains et infectés. Première variante : **« Say Again : Toulouse »**, dans le centre de Toulouse ; d'autres villes suivront. Les zombies sont animés par **Laya** (modèle de décision « System 1 ») et les survivants par un **LLM local** (« System 2 »). Objectif : un démonstrateur novateur, pensé pour avoir un fort impact sur les réseaux sociaux.
+**Nothing To Lose** — simulateur urbain de combat entre survivants humains et infectés, dans le centre de Toulouse (jeu de mots avec Toulouse ; décision [0016](../decisions/0016-nom-nothing-to-lose.md)). Le nom public ne désigne que Toulouse ; le code reste portable, la ville étant une donnée de carte. Les zombies sont animés par **Laya** (modèle de décision « System 1 ») et les survivants par un **LLM local** (« System 2 »). Objectif : un démonstrateur novateur, pensé pour avoir un fort impact sur les réseaux sociaux.
 
 > Statut : conception — version du 5 novembre 2026.
 > Convention : **[Décidé]** = validé ; **[Proposé]** = recommandation en attente de validation ; **[Ouvert]** = question à trancher.
@@ -61,8 +61,10 @@
 - **[Décidé]** Antennes : une par quartier, à découvrir puis à tenir pendant toute une vague de zombies pour révéler l'emplacement des bâtiments d'intérêt du quartier.
 - **[Décidé]** Cinq types de bâtiments d'intérêt (vivres, soins, matériaux, munitions, repos) ; tous les autres sont inexplorables ; sans les données de l'antenne, on teste les bâtiments un par un en s'exposant.
 - **[Décidé]** Effectifs de départ : ~2 000 à 3 000 zombies, ~100 civils, 6 à 10 héros LLM (4 à 6 en live).
-- **[Décidé]** Accroche officielle : **« Lead or Fade: Your Command »**.
-- **[Décidé]** Nom du projet : **Say Again**, avec une variante par ville (« Say Again : Toulouse »). La ville est une donnée : rien de spécifique à Toulouse n'est codé en dur hors des données de la carte.
+- **[Décidé]** Image principale du jeu : le key art [`docs/assets/key-art.png`](../assets/key-art.png) (décision [0018](../decisions/0018-image-principale-key-art.md)), en tête du README racine. Son style réaliste n'est pas une direction artistique décidée ; le rendu du viewer reste celui de [15](15-rendu-viewer.md).
+- **[Décidé]** Accroche officielle : le speech (décision [0017](../decisions/0017-accroche-le-speech.md), qui remplace « Lead or Fade: Your Command ») est le texte long ; texte dans [01](01-vision-concept.md).
+- **[Décidé]** Accroche courte officielle : « Command humanity's last hope », sous-titre du key art (décision [0019](../decisions/0019-accroche-command-humanity-last-hope.md), qui complète 0017). Titre public complet : « Nothing To Lose — Command humanity's last hope ». La signature française « commandez avec brio ! » reste celle de la description (speech, texte long).
+- **[Décidé]** Nom du projet : **Nothing To Lose** (décision [0016](../decisions/0016-nom-nothing-to-lose.md), qui remplace « Say Again »). Toulouse seulement dans le nom public. La ville est une donnée : rien de spécifique à Toulouse n'est codé en dur hors des données de la carte.
 - **[Décidé]** Commandant local d'abord ; invités à distance plus tard.
 - **[Décidé]** CI/CD : GitHub configuré par Terraform (état local), dépôt public, runner GPU auto-hébergé hors pull requests, viewer sur Cloudflare Pages.
 

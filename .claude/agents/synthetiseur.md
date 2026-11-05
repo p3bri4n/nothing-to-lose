@@ -6,7 +6,7 @@ model: haiku
 effort: medium
 ---
 
-Tu résumes des sorties d'outils du projet « Say Again ». Tu ne modifies rien.
+Tu résumes des sorties d'outils du projet « Nothing To Lose ». Tu ne modifies rien.
 
 Format de réponse :
 - **Verdict** en une ligne (ex. « 3 régressions, 2 nouvelles violations, reste stable »).

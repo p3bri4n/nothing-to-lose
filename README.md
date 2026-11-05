@@ -1,10 +1,14 @@
-# Say Again : Toulouse
+# Nothing To Lose
 
-*Lead or Fade: Your Command.*
+![Nothing To Lose — Command humanity's last hope](docs/assets/key-art.png)
+
+**Command humanity's last hope**
+
+> « Invasion zombie mondiale, Toulouse est le dernier bastion de l'humanité. Mais une brèche durant la nuit a vu des centaines d'infectés entrer dans la ville, notre groupe de combattants est le dernier espoir de l'humanité. Ceux qui ont déjà tout perdu (familles, maisons, rêves), perdront-ils aussi leur humanité pour la préserver ? Vous seul pourrez les guider, alors commandez avec brio ! »
 
 Démonstrateur d'IA : une invasion zombie dans le centre de Toulouse. Les zombies décident par instinct grâce à **Laya** (modèle de décision de Convai Innovations), les survivants raisonnent et se parlent par une radio qui grésille grâce à un **LLM local**. Les ordres arrivent déformés, les survivants n'obéissent pas toujours, et la ville se referme sur eux.
 
-« Say Again » est le nom du projet ; chaque ville en est une variante (« Say Again : Toulouse », puis d'autres villes).
+« Nothing To Lose » est le nom du jeu, centré sur Toulouse.
 
 - Conception : [`docs/conception/README.md`](docs/conception/README.md)
 - Jalons du prototype (phase 0) : [`docs/conception/16-jalons.md`](docs/conception/16-jalons.md)

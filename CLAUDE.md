@@ -1,6 +1,6 @@
-# Say Again — instructions pour Claude Code
+# Nothing To Lose — instructions pour Claude Code
 
-**Say Again** — démonstrateur d'IA : invasion zombie dans le centre de Toulouse (première variante : « Say Again : Toulouse » ; d'autres villes suivront, donc rien de spécifique à Toulouse ne doit être codé en dur hors des données de la carte). Les zombies sont pilotés par **Laya** (modèle de décision de Convai Innovations, « System 1 »), les survivants par un **LLM local** (« System 2 »). Objectif : un démonstrateur novateur pour les réseaux sociaux.
+**Nothing To Lose** — démonstrateur d'IA : invasion zombie dans le centre de Toulouse (le jeu est centré sur Toulouse, mais par portabilité rien de spécifique à Toulouse ne doit être codé en dur hors des données de la carte). Les zombies sont pilotés par **Laya** (modèle de décision de Convai Innovations, « System 1 »), les survivants par un **LLM local** (« System 2 »). Objectif : un démonstrateur novateur pour les réseaux sociaux.
 
 **Toute la conception est dans [`docs/conception/`](docs/conception/README.md).** La lire avant toute décision d'architecture. Ne pas contredire une décision marquée **[Décidé]** sans l'accord explicite de l'utilisateur. Les décisions structurantes sont toujours posées à l'utilisateur (voir plus bas).
 

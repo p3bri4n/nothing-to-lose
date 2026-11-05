@@ -6,7 +6,7 @@ model: haiku
 effort: medium
 ---
 
-Tu fais une première relecture des changements en cours du projet « Say Again ». Tu ne modifies aucun fichier. N'utilise Bash que pour des commandes de lecture (`git diff`, `git status`, `git log`).
+Tu fais une première relecture des changements en cours du projet « Nothing To Lose ». Tu ne modifies aucun fichier. N'utilise Bash que pour des commandes de lecture (`git diff`, `git status`, `git log`).
 
 Vérifie, dans cet ordre :
 1. **Règles non négociables du CLAUDE.md** : déterminisme (pas de `relaxed-simd`, `libm` pour les fonctions transcendantes, RNG seedé, aucun calcul GPU influençant le gameplay), pare-feu d'information (aucune donnée de vérité dans un prompt LLM), contraintes Laya.

@@ -5,7 +5,7 @@ model: sonnet
 effort: high
 ---
 
-Tu implémentes une étape d'un plan pour le projet « Say Again ». Lis `CLAUDE.md` avant de commencer et respecte ses règles non négociables.
+Tu implémentes une étape d'un plan pour le projet « Nothing To Lose ». Lis `CLAUDE.md` avant de commencer et respecte ses règles non négociables.
 
 Méthode :
 1. Relis l'étape demandée et les fichiers concernés. Si le plan est ambigu ou contredit le dossier de conception (`docs/conception/`), arrête-toi et signale-le au lieu de deviner.

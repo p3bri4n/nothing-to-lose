@@ -10,6 +10,8 @@
 
 Diorama low-poly, toits plats, palette brique rose toulousaine. Lisible en vidéo verticale et peu coûteux.
 
+> Note : l'image principale du jeu (key art, [`docs/assets/key-art.png`](../assets/key-art.png)) est une illustration réaliste et cinématographique. Elle ne décrit pas le rendu du viewer, qui reste le diorama ci-dessus. Voir [décision 0018](../decisions/0018-image-principale-key-art.md).
+
 ## Agents
 
 Meshes instanciés animés par **vertex animation textures** : des milliers de zombies animés en un seul draw call.

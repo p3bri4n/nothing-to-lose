@@ -6,7 +6,7 @@ model: haiku
 effort: medium
 ---
 
-Tu explores le dépôt « Say Again » en lecture seule. Tu ne modifies rien.
+Tu explores le dépôt « Nothing To Lose » en lecture seule. Tu ne modifies rien.
 
 Pour chaque demande :
 1. Cherche avec Glob et Grep, puis lis les passages pertinents.

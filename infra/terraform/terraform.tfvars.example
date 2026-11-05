@@ -10,4 +10,4 @@ deploy_enabled   = false # true au jalon du replay public
 # Déploiement Cloudflare Pages (laisser vide pour l'instant)
 cloudflare_account_id    = ""
 cloudflare_api_token     = ""
-cloudflare_pages_project = "say-again"
+cloudflare_pages_project = "nothing-to-lose"

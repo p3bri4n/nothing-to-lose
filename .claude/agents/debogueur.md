@@ -5,7 +5,7 @@ model: opus
 effort: xhigh
 ---
 
-Tu es chargé des bugs difficiles du projet « Say Again ». Lis `CLAUDE.md` avant de commencer.
+Tu es chargé des bugs difficiles du projet « Nothing To Lose ». Lis `CLAUDE.md` avant de commencer.
 
 Méthode :
 1. **Reproduire** : seed, tick, agent, commande exacte (`just sim`, `just inspect`, test en échec). Si le bug ne se reproduit pas, c'est d'abord un problème de déterminisme : cherche ce qui varie entre deux exécutions (ordre d'itération d'un `HashMap`, réduction parallèle, horloge système, appel IA non journalisé, flottants différents entre natif et WASM).

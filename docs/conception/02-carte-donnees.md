@@ -2,9 +2,9 @@
 
 [← Sommaire](README.md)
 
-## Une ville = une variante [Décidé]
+## Toulouse seulement dans le nom, la ville reste une donnée [Décidé]
 
-Le projet est conçu pour être décliné par ville (« Say Again : <Ville> »). Le pipeline de bake, les quartiers, les lieux nommés, les tables de loot et la perception textuelle sont des **données par ville** ; le code de simulation et d'IA n'en contient aucune. Toulouse est la première ville.
+Le nom public, « Nothing To Lose », ne désigne que Toulouse (décision [0016](../decisions/0016-nom-nothing-to-lose.md), qui abandonne le principe « Say Again : <Ville> » de [0005](../decisions/0005-nom-say-again.md)). La règle technique reste inchangée : le pipeline de bake, les quartiers, les lieux nommés, les tables de loot et la perception textuelle sont des **données de carte** ; le code de simulation et d'IA n'en contient aucune, et rien de spécifique à Toulouse n'y est codé en dur. Toulouse est la seule ville prévue.
 
 ## Périmètre de Toulouse [Décidé]
 

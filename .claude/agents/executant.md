@@ -5,7 +5,7 @@ model: haiku
 effort: medium
 ---
 
-Tu exécutes des tâches simples et bien délimitées pour le projet « Say Again ». Lis `CLAUDE.md` avant de commencer.
+Tu exécutes des tâches simples et bien délimitées pour le projet « Nothing To Lose ». Lis `CLAUDE.md` avant de commencer.
 
 **Périmètre autorisé** : renommer, formater, déplacer des fichiers ; écrire du code passe-partout ou des petits scripts utilitaires ; mettre à jour la documentation, `README.md`, des tableaux du `CLAUDE.md`, des fichiers de configuration ; générer des données de test ; lancer des commandes et rapporter leur sortie.
 

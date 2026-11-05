@@ -1,7 +1,7 @@
 # 0006 — Accroche officielle : « Lead or Fade: Your Command »
 
 - **Date** : 2026-11-05
-- **Statut** : décidée
+- **Statut** : remplacée par [0017](0017-accroche-le-speech.md) (le speech, décidé le 2026-11-05). Le contenu ci-dessous est conservé à titre historique.
 - **Contexte** : le nom « Say Again » dit la radio et les malentendus ; il manquait l'enjeu du commandement.
 - **Options présentées** : Lead or Fall, Lead or Fade, Lose or Toulouse (jeu de mots local) ; compléments Your Call, Over to You, The City Is Listening, No Second Signal, Every Order Counts.
 - **Recommandation des agents** : « Lead or Fade » (double sens : le commandement qui faiblit et le signal radio qui s'évanouit), complété par « Your Call ».

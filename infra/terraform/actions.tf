@@ -9,6 +9,7 @@ resource "github_actions_repository_permissions" "main" {
     github_owned_allowed = true
     verified_allowed     = true
     patterns_allowed = [
+      "jdx/mise-action@*",
       "dtolnay/rust-toolchain@*",
       "Swatinem/rust-cache@*",
       "extractions/setup-just@*",

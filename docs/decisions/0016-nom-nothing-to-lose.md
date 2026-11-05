@@ -1,0 +1,21 @@
+# 0016 — Nom du projet : « Nothing To Lose »
+
+- **Date** : 2026-11-05
+- **Statut** : décidée
+- **Remplace** : [0005](0005-nom-say-again.md) (« Say Again », une variante par ville).
+- **Contexte** : l'utilisateur a remplacé le nom « Say Again » le jour même de sa décision. Le nouveau nom doit être un jeu de mots avec Toulouse, ville du jeu. Le dépôt GitHub n'a pas encore été créé : le renommage n'a pas de coût technique.
+- **Options présentées** : non consignées dans le compte rendu de la session (décision prise directement par l'utilisateur).
+- **Recommandation des agents** : non consignée dans le compte rendu de la session.
+- **Décision de l'utilisateur** : **« Nothing To Lose »**, jeu de mots avec Toulouse. Il remplace « Say Again » (0005).
+- **Périmètre du nom public** : **Toulouse seulement**. Le principe « Say Again : <Ville> » de 0005 est abandonné : le nom public n'annonce plus de variantes par ville.
+- **Règle technique inchangée** : rien de spécifique à Toulouse n'est codé en dur hors des données de la carte (voir [02](../conception/02-carte-donnees.md)). Cette règle reste en vigueur pour la portabilité du code.
+- **Identifiant technique** : `nothing-to-lose`, utilisé pour :
+  - le dépôt GitHub (à créer) ;
+  - le projet Cloudflare Pages ;
+  - le dossier d'état Terraform `~/.local/share/terraform/nothing-to-lose/` ;
+  - la variable d'environnement du hook de formatage : `NTL_FORMAT_HOOK` au lieu de `SAY_AGAIN_FORMAT_HOOK`.
+- **Conséquences** :
+  - les valeurs techniques des fiches 0002 et 0013 sont mises à jour, avec la mention du renommage ;
+  - les documents vivants de `docs/` reprennent le nouveau nom ; le journal du 2026-11-05 garde sa rédaction d'origine, complétée d'une note ;
+  - les fichiers hors de `docs/` (README racine, `CLAUDE.md`, sous-agents, `justfile`, `infra/terraform/`) sont mis à jour séparément.
+- **Documents mis à jour** : `docs/README.md` (sans changement de contenu), `docs/conception/README.md`, `docs/conception/01-vision-concept.md`, `docs/conception/02-carte-donnees.md`, `docs/conception/17-questions-ouvertes.md`, `docs/technique/ci-cd.md`, `docs/plans/PP.md`, `docs/decisions/0002-etat-terraform-local.md`, `docs/decisions/0013-identite-agents-fusion.md`, `docs/decisions/README.md`, `docs/journal/2026-11-05-conception.md` (note en bas).

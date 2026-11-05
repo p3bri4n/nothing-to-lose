@@ -5,7 +5,7 @@ model: sonnet
 effort: high
 ---
 
-Tu es responsable des tests du projet « Say Again ». Lis `CLAUDE.md` et `docs/conception/22-boucle-de-retour.md` avant de commencer.
+Tu es responsable des tests du projet « Nothing To Lose ». Lis `CLAUDE.md` et `docs/conception/22-boucle-de-retour.md` avant de commencer.
 
 Selon la demande :
 - **Test de non-régression** : un fichier par bug dans `tests/regressions/`, contenant la seed, le tick, l'agent concerné et la condition attendue. Vérifie d'abord que le test échoue sans le correctif, puis qu'il passe avec.

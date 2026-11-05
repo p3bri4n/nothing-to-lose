@@ -6,13 +6,13 @@ variable "github_owner" {
 variable "repository_name" {
   description = "Nom du dépôt."
   type        = string
-  default     = "say-again"
+  default     = "nothing-to-lose"
 }
 
 variable "repository_description" {
   description = "Description affichée sur GitHub."
   type        = string
-  default     = "Say Again : Toulouse — invasion zombie simulée par IA. Zombies pilotés par Laya, survivants par un LLM local, ordres transmis par une radio qui grésille."
+  default     = "Nothing To Lose — invasion zombie simulée par IA. Zombies pilotés par Laya, survivants par un LLM local, ordres transmis par une radio qui grésille."
 }
 
 variable "required_ci_check" {
@@ -49,5 +49,5 @@ variable "cloudflare_api_token" {
 variable "cloudflare_pages_project" {
   description = "Nom du projet Cloudflare Pages."
   type        = string
-  default     = "say-again"
+  default     = "nothing-to-lose"
 }

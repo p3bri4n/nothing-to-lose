@@ -24,6 +24,11 @@ bake/cache/
 # Divers
 .DS_Store
 .env
+.cache/
+
+# Réglages locaux
+mise.local.toml
+.claude/settings.local.json
 
 # Terraform : état et variables locales hors dépôt ; le verrou des providers est versionné
 .terraform/

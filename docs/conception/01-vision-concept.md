@@ -4,9 +4,14 @@
 
 ## Nom
 
-**[Décidé]** **Say Again** : la formule radio « répétez », parce que la mécanique la plus originale du projet est la radio qui se dégrade et les ordres mal compris. Chaque ville est une variante : « Say Again : Toulouse », puis d'autres.
+**[Décidé]** **Nothing To Lose** : jeu de mots avec Toulouse. Le nom public ne désigne que Toulouse : il n'annonce plus de variante par ville (décision [0016](../decisions/0016-nom-nothing-to-lose.md), qui remplace « Say Again », [0005](../decisions/0005-nom-say-again.md)). La radio qui se dégrade et les ordres mal compris restent au cœur des mécaniques ([08](08-radio.md)).
 
-**[Décidé]** Accroche officielle : **« Lead or Fade: Your Command »** — le commandement qui faiblit et le signal radio qui s'évanouit ; « Your Command », l'ordre donné et l'unité commandée. Sur les visuels : « SAY AGAIN : TOULOUSE » puis « Lead or Fade. » ; formule complète en fin de vidéo et dans les bios.
+**[Décidé]** Accroche : deux textes officiels, à deux usages.
+- **Texte long** : le speech ci-dessous (décision [0017](../decisions/0017-accroche-le-speech.md), qui remplace « Lead or Fade: Your Command », [0006](../decisions/0006-accroche-lead-or-fade.md)).
+- **Accroche courte** : « Command humanity's last hope », sous-titre du key art (décision [0019](../decisions/0019-accroche-command-humanity-last-hope.md)). Titre public complet : « Nothing To Lose — Command humanity's last hope ».
+- **Signature de la description** : « Commandez avec brio ! », dernière phrase du speech, reste la signature française de la description (précision de l'utilisateur, 2026-11-05) ; elle n'est pas la formule courte.
+
+> « Invasion zombie mondiale, Toulouse est le dernier bastion de l'humanité. Mais une brèche durant la nuit a vu des centaines d'infectés entrer dans la ville, notre groupe de combattants est le dernier espoir de l'humanité. Ceux qui ont déjà tout perdu (familles, maisons, rêves), perdront-ils aussi leur humanité pour la préserver ? Vous seul pourrez les guider, alors commandez avec brio ! »
 
 [Proposé] Titres de saisons : **Last Known Position** (la traque : zombies, alphas, survivants qui disparaissent du réseau), **Nobody Left Behind** (le dilemme moral : abandonner, exclure, réintégrer). Rubrique de clips courts : **« Wait, what? »**, les malentendus radio les plus absurdes.
 

@@ -1,7 +1,7 @@
 # 0005 — Nom du projet : « Say Again », avec une variante par ville
 
 - **Date** : 2026-11-05
-- **Statut** : décidée
+- **Statut** : remplacée par [0016](0016-nom-nothing-to-lose.md) (« Nothing To Lose », décidé le 2026-11-05). Le contenu ci-dessous est conservé à titre historique.
 - **Contexte** : le projet avait un nom de travail (« Zombies Laya »). Il lui faut un nom public, mémorable, qui dise ce qui le distingue, et disponible.
 - **Options présentées** : The Last Command, We Shall Survive, At Your Command, Thinking Fast and Dead, Squelch, Dead Air, Do You Copy?, Wilco?, Last Known Position, Until Relieved, Those Who Remain, Nobody Left Behind, Wait What?, Say Again. Vérifications faites : « Do You Copy? » (plusieurs jeux, dont un jeu d'horreur radio au concept proche), « Those Who Remain » (jeu commercial, marque déposée), « Wait, What? » (contenu de jeu sur les malentendus), « Last Known Position » (podcast et série Amazon), « No One Left Behind » (film, jeux, série documentaire) sont encombrés ; « Say Again » ne correspond qu'à un petit jeu narratif indépendant.
 - **Recommandation des agents** : Say Again — il raconte la mécanique la plus originale (la radio qui se dégrade et les ordres mal compris) et il est le moins encombré.

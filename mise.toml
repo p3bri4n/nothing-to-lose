@@ -1,0 +1,25 @@
+# Single source of truth for tool versions (decision 0011: exact versions only).
+# Same file is used locally and in CI (jdx/mise-action). Update through a dedicated PR.
+# Sources and dates: docs/recherches/2026-11-05-outillage-pp.md
+#
+# Never add a repository path to PATH here: the repository path contains ":" (see docs/plans/PP.md, R1).
+
+[tools]
+node = "24.22.2"
+python = "3.14.10"
+rust = { version = "1.99.1", components = "rustfmt,clippy", targets = "wasm32-unknown-unknown" }
+"aqua:astral-sh/uv" = "0.13.7"
+"aqua:casey/just" = "1.59.0"
+"aqua:hashicorp/terraform" = "1.17.1"
+"aqua:gitleaks/gitleaks" = "8.30.1"
+"aqua:rhysd/actionlint" = "1.7.12"
+"aqua:astral-sh/ruff" = "0.17.3"
+"aqua:tamasfe/taplo" = "0.10.0"
+"npm:prettier" = "3.9.10"
+"aqua:mvdan/sh" = "3.14.1"
+"aqua:koalaman/shellcheck" = "0.11.0"
+"aqua:cli/cli" = "2.103.3"
+"aqua:anthropics/claude-code" = "2.1.318"
+
+[env]
+UV_PYTHON_DOWNLOADS = "never"

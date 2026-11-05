@@ -46,3 +46,7 @@
 | Q28 | Sorties de secours | À découvrir en explorant l'intérieur |
 | Q29 | Intérieurs et sièges | Dans le MVP (J4c, avec les alphas en J4b) |
 | — | Nom du projet | **Say Again**, une variante par ville (« Say Again : Toulouse ») — décision 0005 du dépôt |
+| — | Nom du projet (suite, 5 novembre 2026) | **Nothing To Lose**, jeu de mots avec Toulouse ; Toulouse seulement dans le nom public ; identifiant technique `nothing-to-lose` — décision [0016](../decisions/0016-nom-nothing-to-lose.md), qui remplace 0005 |
+| — | Accroche (suite, 5 novembre 2026) | Le speech officiel, signature « commandez avec brio ! », à la place de « Lead or Fade: Your Command » — décision [0017](../decisions/0017-accroche-le-speech.md), qui remplace 0006 |
+| — | Accroche (suite, 5 novembre 2026) | Accroche courte officielle : « Command humanity's last hope » (sous-titre du key art) ; le speech reste le texte long. La signature « commandez avec brio ! » reste celle de la description (précision de l'utilisateur) — décision [0019](../decisions/0019-accroche-command-humanity-last-hope.md), qui complète 0017 |
+| — | Outillage et circuit Git du jalon PP (5 novembre 2026) | Hooks Git maison, gitleaks figé via mise, `mise-action` en CI, liste de contrôle des PR bloquante, versions exactes, Markdown hors formatage, identité des agents et fusion réservée à l'utilisateur, séquencement de PP, sandbox reporté (Claudeus) — décisions [0007](../decisions/0007-hooks-git-scripts-maison.md) à [0015](../decisions/0015-sandbox-reporte-apres-pp.md) |

@@ -1,0 +1,21 @@
+# 0018 — Image principale du jeu (key art)
+
+- **Date** : 2026-11-05
+- **Statut** : décidée
+- **Complétée par** : [0019](0019-accroche-command-humanity-last-hope.md) (2026-11-05) : le sous-titre de l'image devient l'accroche courte officielle. Le point non tranché sur ce sous-titre, ci-dessous, est levé.
+- **Contexte** : l'utilisateur a fourni une illustration du jeu, à utiliser comme image principale. Elle sert de visuel d'accueil (en tête du README racine) et doit être versionnée dans le dépôt. Son style (réaliste, cinématographique) diffère du rendu prévu pour le viewer (diorama low-poly, [15](../conception/15-rendu-viewer.md)) : la décision porte sur l'image principale, pas sur la direction artistique du jeu.
+- **Options présentées** : non consignées dans le compte rendu de la session (image fournie directement par l'utilisateur).
+- **Recommandation des agents** : non consignée dans le compte rendu de la session.
+- **Décision de l'utilisateur** : « ça sera l'image principale du jeu ». Fichier : [`docs/assets/key-art.png`](../assets/key-art.png) (PNG, 1024 × 559 px), copié depuis la conversation.
+  - **Contenu** : titre « NOTHING TO LOSE » et sous-titre « COMMAND HUMANITY'S LAST HOPE », inclus dans l'image ; forteresse en brique rouge évoquant Toulouse (tour d'église, murailles) en flammes, ciel rouge de nuit ; au premier plan, barricade de sacs de sable et barbelés, horde de zombies et créature mutante ; quatre survivants armés ; blindé, bombardiers et projecteurs.
+  - **Style** : réaliste et cinématographique.
+- **Usages retenus** : image principale du jeu. Elle est déjà placée en tête de [`README.md`](../../README.md).
+- **Points non tranchés par l'utilisateur** (à ne pas considérer comme décidés) :
+  - ~~le sous-titre anglais « COMMAND HUMANITY'S LAST HOPE » fait partie de l'image mais n'a pas été déclaré accroche officielle~~ : **tranché le 2026-11-05 par [0019](0019-accroche-command-humanity-last-hope.md)** (le sous-titre devient l'accroche courte officielle ; le speech reste le texte long, [0017](0017-accroche-le-speech.md)) ;
+  - le style réaliste de l'image n'a pas été déclaré direction artistique du jeu : le prototype reste en capsules colorées, et le contenu publiable de J0 reste un diorama low-poly ([15](../conception/15-rendu-viewer.md), [16](../conception/16-jalons.md)) ;
+  - la provenance de l'image (outil de génération, droits d'utilisation) n'est pas documentée : **à renseigner avant publication**.
+- **Conséquences** :
+  - l'image est le visuel principal du README racine et des usages publics du projet ; tout autre visuel de présentation reste à décider ;
+  - toute question de style visuel (direction artistique, réalisme ou rendu stylisé) reste ouverte et relève d'une nouvelle décision de l'utilisateur ;
+  - avant toute publication, la provenance et les droits de l'image doivent être documentés.
+- **Documents mis à jour** : `docs/decisions/README.md`, `docs/README.md`, `docs/conception/README.md`, `docs/conception/15-rendu-viewer.md` (note de renvoi), `README.md` (image déjà en place).

@@ -18,7 +18,7 @@ resource "github_repository" "main" {
   allow_rebase_merge     = false
   delete_branch_on_merge = true
 
-  vulnerability_alerts = true
+  # Les alertes de vulnérabilités sont gérées par github_repository_vulnerability_alerts (ci-dessous).
 
   security_and_analysis {
     secret_scanning {
@@ -32,4 +32,9 @@ resource "github_repository" "main" {
   lifecycle {
     prevent_destroy = true
   }
+}
+
+resource "github_repository_vulnerability_alerts" "main" {
+  repository = github_repository.main.name
+  enabled    = true
 }

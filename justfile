@@ -1,8 +1,14 @@
-# Say Again — commandes du projet (voir CLAUDE.md)
+# Nothing To Lose — commandes du projet (voir CLAUDE.md)
 # Les recettes marquées « à venir » seront implémentées au jalon indiqué.
+
+set shell := ["bash", "-euo", "pipefail", "-c"]
 
 default:
     @just --list
+
+# PP — installer les outils aux versions figées de mise.toml (les hooks Git s'ajoutent à l'étape E7)
+setup:
+    mise install
 
 # P0 — extraire et préparer la carte du centre de Toulouse (OSM)
 bake:
@@ -34,7 +40,7 @@ eval *ARGS:
 
 # --- Infrastructure GitHub (Terraform) ---
 # État local hors dépôt (décision 0002). Le jeton GitHub vient de GITHUB_TOKEN.
-tf_state := env_var_or_default("TF_STATE_PATH", env_var("HOME") + "/.local/share/terraform/say-again/terraform.tfstate")
+tf_state := env_var_or_default("TF_STATE_PATH", env_var("HOME") + "/.local/share/terraform/nothing-to-lose/terraform.tfstate")
 
 # Initialiser Terraform (une fois, ou après un changement de provider)
 tf-init:

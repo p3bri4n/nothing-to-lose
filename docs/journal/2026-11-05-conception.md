@@ -30,3 +30,7 @@ Toutes prises par l'utilisateur ; voir le journal des décisions de `docs/concep
 - Jalon PP (préparation de l'environnement) ajouté au plan avant P0 ; doublures des modèles et benchmarks intégrés à P2 ; traçabilité des versions à P0–P1.
 - Planifier PP puis P0 avec `architecte`.
 - Lancer `just tf-init`, `just tf-check` et `just tf-plan`, vérifier les points signalés dans `docs/technique/ci-cd.md`, puis `just tf-apply` (utilisateur) et premier push.
+
+---
+
+*Note ajoutée le 2026-11-05 : renommé en Nothing To Lose le 2026-11-05 (décisions [0016](../decisions/0016-nom-nothing-to-lose.md), [0017](../decisions/0017-accroche-le-speech.md)). Les mentions « Say Again » et « Lead or Fade » ci-dessus sont celles de la rédaction d'origine.*

@@ -1,0 +1,5 @@
+# Must match `rust` in mise.toml (checked by tools/check_tool_versions.py).
+[toolchain]
+channel = "1.99.1"
+components = ["rustfmt", "clippy"]
+targets = ["wasm32-unknown-unknown"]

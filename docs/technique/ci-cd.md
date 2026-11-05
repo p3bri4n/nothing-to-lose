@@ -1,6 +1,6 @@
 # CI/CD et infrastructure GitHub
 
-*Mise à jour : 2026-11-05*
+*Mise à jour : 2026-11-05 (renommage du dépôt et du projet en `nothing-to-lose`, voir [0016](../decisions/0016-nom-nothing-to-lose.md))*
 
 Décisions : [0001](../decisions/0001-terraform-pour-github.md), [0002](../decisions/0002-etat-terraform-local.md), [0003](../decisions/0003-depot-public.md), [0004](../decisions/0004-cloudflare-pages.md).
 
@@ -21,7 +21,7 @@ Décisions : [0001](../decisions/0001-terraform-pour-github.md), [0002](../decis
 ```bash
 cp infra/terraform/terraform.tfvars.example infra/terraform/terraform.tfvars   # puis compléter
 export GITHUB_TOKEN=...      # jamais dans un fichier du dépôt
-just tf-init                 # état dans ~/.local/share/terraform/say-again/ (TF_STATE_PATH pour changer)
+just tf-init                 # état dans ~/.local/share/terraform/nothing-to-lose/ (TF_STATE_PATH pour changer)
 just tf-plan
 just tf-apply                # réservé à l'utilisateur
 ```
@@ -33,7 +33,7 @@ git remote add origin "$(cd infra/terraform && terraform output -raw repository_
 git push -u origin main
 ```
 
-Si le dépôt existe déjà sur GitHub : `terraform import github_repository.main say-again` avant le premier `apply` (commande réservée à l'utilisateur).
+Si le dépôt existe déjà sur GitHub : `terraform import github_repository.main nothing-to-lose` avant le premier `apply` (commande réservée à l'utilisateur).
 
 **État** : local, hors du dépôt. Il contient les valeurs des secrets fournis à Terraform : le sauvegarder dans un endroit sûr et chiffré.
 
@@ -72,7 +72,7 @@ Les tests qui dépendent de Laya ou du LLM utilisent des doublures (réponses en
 - Cible : **Cloudflare Pages**, qui accepte les en-têtes COOP/COEP via `web/viewer/public/_headers`.
 - **Interrupteur** : variable `DEPLOY_ENABLED` (Terraform `deploy_enabled`), à activer au jalon du replay public.
 - Secrets `CLOUDFLARE_API_TOKEN` et `CLOUDFLARE_ACCOUNT_ID` : uniquement dans l'environnement `production`, utilisable seulement depuis `main`. Créés par Terraform quand les variables correspondantes sont renseignées.
-- **À faire avant activation** : créer le projet Pages (`npx wrangler pages project create say-again`, ou plus tard via le provider Terraform Cloudflare, dont le schéma est à vérifier par `chercheur-web`), et créer un jeton Cloudflare limité à *Pages : édition*.
+- **À faire avant activation** : créer le projet Pages (`npx wrangler pages project create nothing-to-lose`, ou plus tard via le provider Terraform Cloudflare, dont le schéma est à vérifier par `chercheur-web`), et créer un jeton Cloudflare limité à *Pages : édition*.
 
 ## Validation locale
 
