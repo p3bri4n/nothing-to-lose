@@ -1,0 +1,48 @@
+# Évaluation avec les vrais modèles (Laya, LLM) sur le runner GPU auto-hébergé.
+#
+# Sécurité — le dépôt est public (décision 0003) :
+# - JAMAIS déclenché par pull_request : du code proposé par un inconnu ne doit pas
+#   s'exécuter sur la machine personnelle.
+# - Seulement après un push sur main (protégée par le ruleset) ou un lancement manuel.
+# - Désactivé tant que la variable GPU_EVAL_ENABLED n'est pas à true (Terraform).
+name: gpu-eval
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "crates/**"
+      - "services/**"
+      - "targets.toml"
+  workflow_dispatch:
+    inputs:
+      seeds:
+        description: "Nombre de parties"
+        default: "20"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gpu-eval
+  cancel-in-progress: false
+
+jobs:
+  eval:
+    if: vars.GPU_EVAL_ENABLED == 'true' && github.repository_owner == github.actor
+    runs-on: [self-hosted, linux, gpu]
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - name: Évaluation
+        run: just eval --seeds ${{ inputs.seeds || '20' }}
+      - name: Rapport
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-report
+          path: |
+            reports/report.md
+            runs/**/summary.json
+            runs/**/violations.txt
+          if-no-files-found: warn

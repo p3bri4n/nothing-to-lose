@@ -1,0 +1,48 @@
+# 17 — Questions ouvertes et journal des décisions
+
+[← Sommaire](README.md)
+
+## Restent ouvertes
+
+| # | Question | Recommandation | Impact |
+|---|---|---|---|
+| Q21 | Les survivants gardent-ils leur XP d'un épisode à l'autre ? | **Reporté** | [20](20-progression-xp.md) |
+| Q30 | Taille de la vague déclenchée par une antenne | Proportionnelle aux zombies du quartier, à régler en équilibrage | [19](19-quartiers-batiments.md) |
+| Q32 | Comment l'antenne est-elle découverte ? | Mât visible au-dessus des toits, repéré par ligne de vue | [19](19-quartiers-batiments.md) |
+| Q33 | Durée et bruit d'un essai de porte sur un bâtiment inconnu | Quelques secondes ; forcer = bruyant, discret = plus long | [19](19-quartiers-batiments.md) |
+| Q31 | Antenne et armoire de piratage au même endroit, ou séparées ? | Séparées : deux objectifs distincts par quartier | [19](19-quartiers-batiments.md) |
+| — | Capacités réelles de la machine (CPU, débit LLM en parallèle, latence de Laya) | Trois benchmarks à écrire | [03](03-architecture-technique.md) |
+
+## Journal des décisions (revue du 5 novembre 2026)
+
+| # | Question | Décision |
+|---|---|---|
+| Q1 | Refuge | Bâtiments de repos tirés au hasard par quartier |
+| Q2 | Réintégration d'un exclu | Oui, après une bonne action pour le groupe |
+| Q3 | Confiance après une rupture | Plafond définitivement abaissé (~0,85) |
+| Q4 | Cacher une griffure | Oui : le survivant peut se taire et mentir |
+| Q5 | Résultat d'une griffure pour le public | Caché aussi ; pronostics du public |
+| Q6 | Vitesse du son | Ralentie (~50 m/s) |
+| Q7 | Effectifs | ~2 000–3 000 zombies, ~100 civils, 6–10 héros LLM (4–6 en live) |
+| Q8 | Commandant | Local d'abord, invités plus tard |
+| Q9 | Moteur 3D | Three.js |
+| Q10 | Médicament contre la griffure | Dans une fenêtre juste après la griffure |
+| Q11 | Majorité pour exclure | 2/3 pour un membre sain, simple pour un soupçonné |
+| Q12 | Laya | Le modèle de décision de Convai Innovations |
+| Q13 | Deuil dans un groupe uni | Plus lourd, mais récupération plus rapide après les bons moments |
+| Q14 | Dernier recours (choix de mourir plutôt que d'être mordu) | **Mécanique supprimée** |
+| Q15 | Zombies qui forcent l'entrée | Seulement une horde menée par un alpha, sur un bâtiment stratégique |
+| Q16 | Fouille | À l'intérieur des bâtiments |
+| Q17 | Quartiers | 5 quartiers (axes Alsace-Lorraine / Metz) |
+| Q18 | Point d'information | Antenne par quartier, à découvrir puis à tenir pendant toute une vague ; sans elle, tester les bâtiments un par un |
+| Q19 | XP des zombies | Oui, avec mutation en alpha |
+| Q20 | Choix de la compétence débloquée | Le survivant (son LLM), recommandation possible du commandant |
+| Q22 | Compétences | 9 compétences, évolutives ; spécialisations plus tard |
+| Q23 | Nombre d'alphas | Un pour X zombies, un par quartier au maximum |
+| Q24 | Alpha qui force l'entrée | Oui, sur les bâtiments stratégiques |
+| Q25 | Valeur de X | 300 à 500 zombies par alpha (départ de l'équilibrage) |
+| Q26 | Perception partagée entre alphas | Non : seulement une priorité de ruche résumée |
+| Q27 | Matériaux de renforcement | Stock limité par bâtiment, apport possible depuis ailleurs |
+| Q28 | Sorties de secours | À découvrir en explorant l'intérieur |
+| Q29 | Intérieurs et sièges | Dans le MVP (J4c, avec les alphas en J4b) |
+| — | Nom du projet | **Say Again**, une variante par ville (« Say Again : Toulouse ») — décision 0005 du dépôt |

@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Toulouse 3D — prototype de rendu</title>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #d6cfc1; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #2a2622; }
+  #c { position: fixed; inset: 0; display: block; width: 100%; height: 100%; }
+  #panel { position: fixed; top: 12px; left: 12px; width: 300px; max-height: calc(100% - 24px); overflow: auto; background: rgba(255,255,255,0.93); border-radius: 12px; padding: 14px 16px; box-shadow: 0 2px 14px rgba(0,0,0,0.16); font-size: 13px; line-height: 1.45; box-sizing: border-box; }
+  #panel h1 { font-size: 16px; font-weight: 600; margin: 0 0 4px; }
+  #status { color: #5b544c; margin-bottom: 10px; min-height: 18px; }
+  #status.err { color: #a32d2d; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; margin: 6px 0; }
+  button, .btn { font: inherit; font-size: 12.5px; padding: 6px 10px; border-radius: 8px; border: 1px solid #c9c1b4; background: #fff; color: #2a2622; cursor: pointer; display: inline-block; }
+  button:hover, .btn:hover { background: #f4efe7; }
+  .sep { height: 1px; background: #e5ded2; margin: 10px 0; }
+  label.opt { display: flex; align-items: center; gap: 6px; margin: 5px 0; }
+  .slider { display: grid; grid-template-columns: 62px 1fr 46px; align-items: center; gap: 6px; margin: 5px 0; }
+  .slider span { text-align: right; color: #5b544c; }
+  details { margin-top: 8px; }
+  summary { cursor: pointer; font-weight: 600; }
+  ol { padding-left: 18px; margin: 6px 0; }
+  textarea { width: 100%; box-sizing: border-box; font: 11px/1.4 ui-monospace, Menlo, Consolas, monospace; border: 1px solid #d9d1c4; border-radius: 6px; padding: 6px; resize: vertical; background: #faf8f4; }
+  #legend { display: flex; gap: 14px; margin-top: 8px; color: #5b544c; }
+  .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
+  #stats { color: #7a7268; font-size: 12px; margin-top: 6px; }
+  #drop { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(42,38,34,0.45); color: #fff; font-size: 22px; pointer-events: none; }
+  #drop.on { display: flex; }
+  #help { position: fixed; right: 12px; bottom: 12px; background: rgba(255,255,255,0.88); border-radius: 8px; padding: 6px 10px; font-size: 12px; color: #5b544c; }
+</style>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="panel">
+  <h1>Toulouse — prototype 3D</h1>
+  <div id="status">Chargement…</div>
+  <div class="row">
+    <button id="btnDemo">Ville de démonstration</button>
+    <label class="btn">Charger un export OSM<input type="file" id="file" accept=".json,.geojson,.osm,.xml" hidden></label>
+  </div>
+  <div class="sep"></div>
+  <label class="opt"><input type="checkbox" id="realH" checked> Hauteurs réelles (sinon uniformes)</label>
+  <label class="opt"><input type="checkbox" id="showEnt" checked> Afficher les entités</label>
+  <label class="opt"><input type="checkbox" id="bigEnt" checked> Entités agrandies ×3</label>
+  <div class="slider"><label for="nZ">Zombies</label><input type="range" id="nZ" min="0" max="3000" step="50" value="500"><span id="nZv">500</span></div>
+  <div class="slider"><label for="spd">Vitesse</label><input type="range" id="spd" min="1" max="30" value="5"><span id="spdv">5×</span></div>
+  <div class="row"><button id="btnCam">Recentrer la vue</button></div>
+  <div id="legend"><span><span class="dot" style="background:#5f9e34"></span>zombies</span><span><span class="dot" style="background:#2f6fd6"></span>survivants</span></div>
+  <div id="stats"></div>
+  <details>
+    <summary>Charger le vrai centre de Toulouse</summary>
+    <ol>
+      <li>Ouvre <a href="https://overpass-turbo.eu/" target="_blank" rel="noopener">overpass-turbo.eu</a> dans un autre onglet.</li>
+      <li>Colle la requête ci-dessous, puis clique sur « Exécuter ».</li>
+      <li>« Exporter » → « GeoJSON » (ou « données brutes OSM »), et télécharge le fichier.</li>
+      <li>Glisse le fichier sur cette page, ou utilise « Charger un export OSM ».</li>
+    </ol>
+    <textarea id="q" readonly rows="11">[out:json][timeout:120];
+(
+  way["building"](43.5925,1.4295,43.6120,1.4570);
+  relation["building"](43.5925,1.4295,43.6120,1.4570);
+  way["highway"](43.5925,1.4295,43.6120,1.4570);
+  way["natural"="water"](43.5925,1.4295,43.6120,1.4570);
+  relation["natural"="water"](43.5925,1.4295,43.6120,1.4570);
+  way["waterway"="riverbank"](43.5925,1.4295,43.6120,1.4570);
+);
+out geom;</textarea>
+    <div class="row"><button id="btnCopy">Copier la requête</button><span id="copyMsg" style="color:#5b544c;align-self:center"></span></div>
+  </details>
+</div>
+<div id="drop">Dépose le fichier pour l'afficher</div>
+<div id="help">Clic gauche : déplacer · clic droit : pivoter · molette : zoom</div>
+
+<script type="module">
+import * as THREE from 'three';
+import { MapControls } from 'three/addons/controls/MapControls.js';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+
+// <core>
+const BUILDING_COLORS = [0xc8735a, 0xd2876b, 0xb9604a, 0xd99b7f, 0xc66f55, 0xe0a98f, 0xb5674f, 0xcf8065];
+const UNIFORM_H = 15;
+
+function classify(tags) {
+  if (!tags) return null;
+  if (tags.building && tags.building !== 'no') return 'building';
+  if (tags.highway) return 'road';
+  if (tags.natural === 'water' || tags.waterway === 'riverbank' || tags.water) return 'water';
+  return null;
+}
+
+function stripClose(ring) {
+  if (ring.length > 1) {
+    const a = ring[0], b = ring[ring.length - 1];
+    if (Math.abs(a[0] - b[0]) < 1e-12 && Math.abs(a[1] - b[1]) < 1e-12) return ring.slice(0, -1);
+  }
+  return ring;
+}
+
+function isClosed(pts) {
+  if (pts.length < 4) return false;
+  const a = pts[0], b = pts[pts.length - 1];
+  return Math.abs(a[0] - b[0]) < 1e-12 && Math.abs(a[1] - b[1]) < 1e-12;
+}
+
+function samePt(a, b, eps) { return Math.abs(a[0] - b[0]) < eps && Math.abs(a[1] - b[1]) < eps; }
+
+function assembleRings(parts, eps) {
+  const pool = parts.filter(p => p && p.length >= 2).map(p => p.slice());
+  const rings = [];
+  while (pool.length) {
+    let cur = pool.shift();
+    let changed = true;
+    while (!samePt(cur[0], cur[cur.length - 1], eps) && changed) {
+      changed = false;
+      for (let i = 0; i < pool.length; i++) {
+        const p = pool[i];
+        const last = cur[cur.length - 1];
+        if (samePt(last, p[0], eps)) { cur = cur.concat(p.slice(1)); }
+        else if (samePt(last, p[p.length - 1], eps)) { cur = cur.concat(p.slice(0, -1).reverse()); }
+        else if (samePt(cur[0], p[p.length - 1], eps)) { cur = p.concat(cur.slice(1)); }
+        else if (samePt(cur[0], p[0], eps)) { cur = p.slice().reverse().concat(cur.slice(1)); }
+        else continue;
+        pool.splice(i, 1);
+        changed = true;
+        break;
+      }
+    }
+    if (cur.length >= 4 && samePt(cur[0], cur[cur.length - 1], eps)) rings.push(cur);
+  }
+  return rings;
+}
+
+function pointInRing(pt, ring) {
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const xi = ring[i][0], yi = ring[i][1], xj = ring[j][0], yj = ring[j][1];
+    if (((yi > pt[1]) !== (yj > pt[1])) && (pt[0] < (xj - xi) * (pt[1] - yi) / (yj - yi) + xi)) inside = !inside;
+  }
+  return inside;
+}
+
+function polygonsFromRings(outers, inners) {
+  const polys = outers.map(o => [o]);
+  for (const h of inners) {
+    const owner = polys.find(p => pointInRing(h[0], p[0]));
+    if (owner) owner.push(h);
+  }
+  return polys;
+}
+
+function emptyRaw() { return { buildings: [], roads: [], plazas: [], water: [] }; }
+
+function addArea(raw, kind, rings, tags) {
+  if (kind === 'building') raw.buildings.push({ rings, tags });
+  else if (kind === 'water') raw.water.push({ rings });
+  else if (kind === 'road') raw.plazas.push({ rings });
+}
+
+function parseOverpass(data) {
+  const raw = emptyRaw();
+  for (const el of data.elements) {
+    const tags = el.tags || {};
+    const kind = classify(tags);
+    if (!kind) continue;
+    if (el.type === 'way' && Array.isArray(el.geometry)) {
+      const pts = el.geometry.filter(Boolean).map(g => [g.lon, g.lat]);
+      if (pts.length < 2) continue;
+      if (kind === 'road') {
+        if (tags.area === 'yes' && isClosed(pts)) addArea(raw, 'road', [pts], tags);
+        else raw.roads.push({ pts, tags });
+      } else if (isClosed(pts)) {
+        addArea(raw, kind, [pts], tags);
+      }
+    } else if (el.type === 'relation' && Array.isArray(el.members) && kind !== 'road') {
+      const outerParts = [], innerParts = [];
+      for (const m of el.members) {
+        if (m.type !== 'way' || !Array.isArray(m.geometry)) continue;
+        const pts = m.geometry.filter(Boolean).map(g => [g.lon, g.lat]);
+        (m.role === 'inner' ? innerParts : outerParts).push(pts);
+      }
+      const polys = polygonsFromRings(assembleRings(outerParts, 1e-9), assembleRings(innerParts, 1e-9));
+      for (const p of polys) addArea(raw, kind, p, tags);
+    }
+  }
+  return raw;
+}
+
+function parseGeoJSON(fc) {
+  const raw = emptyRaw();
+  for (const f of fc.features || []) {
+    const props = f.properties || {};
+    const tags = props.tags || props;
+    const kind = classify(tags);
+    const g = f.geometry;
+    if (!kind || !g) continue;
+    if (g.type === 'Polygon') addArea(raw, kind, g.coordinates, tags);
+    else if (g.type === 'MultiPolygon') for (const p of g.coordinates) addArea(raw, kind, p, tags);
+    else if (kind === 'road' && g.type === 'LineString') raw.roads.push({ pts: g.coordinates, tags });
+    else if (kind === 'road' && g.type === 'MultiLineString') for (const l of g.coordinates) raw.roads.push({ pts: l, tags });
+  }
+  return raw;
+}
+
+function heightOf(tags) {
+  const h = parseFloat(String(tags.height || '').replace(',', '.'));
+  if (h > 0) return Math.min(Math.max(h, 3), 90);
+  const lv = parseFloat(tags['building:levels']);
+  if (lv > 0) return Math.min(lv * 3.2 + 1.5, 90);
+  return 14;
+}
+
+function roadStyle(tags) {
+  const hw = tags.highway;
+  if (['primary', 'secondary', 'tertiary', 'trunk', 'primary_link', 'secondary_link', 'tertiary_link'].includes(hw)) return { w: 10, c: 0xf6f2ea, y: 0.14 };
+  if (['footway', 'path', 'steps', 'cycleway', 'track', 'bridleway', 'corridor'].includes(hw)) return { w: 2.5, c: 0xe9e2d4, y: 0.10 };
+  if (hw === 'pedestrian' || hw === 'living_street') return { w: 7, c: 0xefe8da, y: 0.12 };
+  if (hw === 'service') return { w: 4, c: 0xece6da, y: 0.11 };
+  return { w: 6.5, c: 0xf1ece3, y: 0.12 };
+}
+
+function walkable(tags) {
+  return !['motorway', 'motorway_link', 'construction', 'proposed', 'elevator'].includes(tags.highway);
+}
+
+function project(raw) {
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  const src = raw.buildings.length ? raw.buildings.map(b => b.rings[0]) : raw.roads.map(r => r.pts);
+  for (const ring of src) for (const p of ring) {
+    if (p[0] < minX) minX = p[0]; if (p[0] > maxX) maxX = p[0];
+    if (p[1] < minY) minY = p[1]; if (p[1] > maxY) maxY = p[1];
+  }
+  if (!isFinite(minX)) throw new Error('Aucun bâtiment ni aucune rue trouvés dans ce fichier.');
+  const lon0 = (minX + maxX) / 2, lat0 = (minY + maxY) / 2;
+  const kx = 111320 * Math.cos(lat0 * Math.PI / 180), ky = 110540;
+  const P = p => [(p[0] - lon0) * kx, (p[1] - lat0) * ky];
+  const R = ring => stripClose(ring).map(P);
+  const out = {
+    buildings: raw.buildings.map((b, i) => ({ rings: b.rings.map(R), h: heightOf(b.tags || {}), color: BUILDING_COLORS[i % BUILDING_COLORS.length] })),
+    roads: raw.roads.map(r => ({ pts: r.pts.map(P), style: roadStyle(r.tags || {}), walk: walkable(r.tags || {}) })),
+    plazas: raw.plazas.map(p => ({ rings: p.rings.map(R) })),
+    water: raw.water.map(w => ({ rings: w.rings.map(R) })),
+  };
+  out.extent = Math.max((maxX - minX) * kx, (maxY - minY) * ky, 300);
+  return out;
+}
+
+function rnd(seed) {
+  let s = seed >>> 0;
+  return () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
+}
+
+function generateDemo() {
+  const r = rnd(31415);
+  const xs = [-430], ys = [-600];
+  while (xs[xs.length - 1] < 640) xs.push(xs[xs.length - 1] + 70 + r() * 50);
+  while (ys[ys.length - 1] < 600) ys.push(ys[ys.length - 1] + 70 + r() * 50);
+  const city = { buildings: [], roads: [], plazas: [], water: [] };
+  city.water.push({ rings: [[[-720, -700], [-470, -700], [-485, 0], [-470, 700], [-720, 700]]] });
+  const major = { w: 10, c: 0xf6f2ea, y: 0.14 }, minor = { w: 6.5, c: 0xf1ece3, y: 0.12 };
+  xs.forEach((x, i) => city.roads.push({ pts: ys.map(y => [x, y]), style: i % 3 === 0 ? major : minor, walk: true }));
+  ys.forEach((y, j) => city.roads.push({ pts: xs.map(x => [x, y]), style: j % 3 === 0 ? major : minor, walk: true }));
+  let ci = 0;
+  for (let i = 0; i < xs.length - 1; i++) for (let j = 0; j < ys.length - 1; j++) {
+    const x0 = xs[i] + 5, x1 = xs[i + 1] - 5, y0 = ys[j] + 5, y1 = ys[j + 1] - 5;
+    if (r() < 0.08) { city.plazas.push({ rings: [[[x0, y0], [x1, y0], [x1, y1], [x0, y1]]] }); continue; }
+    const d = 11 + r() * 6;
+    const lots = [];
+    for (let x = x0; x < x1 - 6;) { const w = Math.min(10 + r() * 14, x1 - x); lots.push([x, y1 - d, x + w, y1]); lots.push([x, y0, x + w, y0 + d]); x += w; }
+    for (let y = y0 + d; y < y1 - d - 6;) { const w = Math.min(10 + r() * 14, y1 - d - y); lots.push([x0, y, x0 + d, y + w]); lots.push([x1 - d, y, x1, y + w]); y += w; }
+    for (const [a, b, c, e] of lots) {
+      if (r() < 0.07) continue;
+      const h = r() < 0.03 ? 28 + r() * 20 : 9 + r() * 13;
+      city.buildings.push({ rings: [[[a, b], [c, b], [c, e], [a, e]]], h, color: BUILDING_COLORS[ci++ % BUILDING_COLORS.length] });
+    }
+  }
+  city.extent = 1300;
+  return city;
+}
+
+function buildingGeometry(b, h, color) {
+  const outer = b.rings[0];
+  if (!outer || outer.length < 3) return null;
+  const shape = new THREE.Shape(outer.map(p => new THREE.Vector2(p[0], p[1])));
+  for (let k = 1; k < b.rings.length; k++) if (b.rings[k].length >= 3) shape.holes.push(new THREE.Path(b.rings[k].map(p => new THREE.Vector2(p[0], p[1]))));
+  const g = new THREE.ExtrudeGeometry(shape, { depth: h, bevelEnabled: false, curveSegments: 1, steps: 1 });
+  g.rotateX(-Math.PI / 2);
+  g.deleteAttribute('uv');
+  const col = new THREE.Color().setHex(color);
+  const n = g.attributes.position.count;
+  const arr = new Float32Array(n * 3);
+  for (let i = 0; i < n; i++) { arr[i * 3] = col.r; arr[i * 3 + 1] = col.g; arr[i * 3 + 2] = col.b; }
+  g.setAttribute('color', new THREE.BufferAttribute(arr, 3));
+  return g;
+}
+
+async function buildBuildings(list, realH, onProgress) {
+  const parts = [];
+  const chunk = 400;
+  for (let i = 0; i < list.length; i++) {
+    try {
+      const g = buildingGeometry(list[i], realH ? list[i].h : UNIFORM_H, list[i].color);
+      if (g && g.attributes.position.count > 0) parts.push(g);
+    } catch (e) { /* polygone invalide ignoré */ }
+    if (i % chunk === chunk - 1) { if (onProgress) onProgress(i + 1, list.length); await new Promise(r => setTimeout(r, 0)); }
+  }
+  if (!parts.length) return null;
+  const merged = mergeGeometries(parts, false);
+  parts.forEach(p => p.dispose());
+  return merged;
+}
+
+function flatGeometry(polys, y) {
+  const parts = [];
+  for (const p of polys) {
+    const outer = p.rings[0];
+    if (!outer || outer.length < 3) continue;
+    try {
+      const shape = new THREE.Shape(outer.map(q => new THREE.Vector2(q[0], q[1])));
+      for (let k = 1; k < p.rings.length; k++) shape.holes.push(new THREE.Path(p.rings[k].map(q => new THREE.Vector2(q[0], q[1]))));
+      const g = new THREE.ShapeGeometry(shape, 1);
+      g.rotateX(-Math.PI / 2);
+      g.translate(0, y, 0);
+      g.deleteAttribute('uv');
+      parts.push(g.index ? g.toNonIndexed() : g);
+    } catch (e) { /* ignoré */ }
+  }
+  return parts.length ? mergeGeometries(parts, false) : null;
+}
+
+function ribbonGeometry(roads) {
+  const pos = [], col = [];
+  const c = new THREE.Color();
+  for (const r of roads) {
+    c.setHex(r.style.c);
+    const hw = r.style.w / 2, y = r.style.y;
+    for (let i = 0; i < r.pts.length - 1; i++) {
+      const [ax, ay] = r.pts[i], [bx, by] = r.pts[i + 1];
+      const dx = bx - ax, dy = by - ay, len = Math.hypot(dx, dy);
+      if (len < 0.01) continue;
+      const nx = -dy / len * hw, ny = dx / len * hw;
+      const ex = dx / len * hw * 0.6, ey = dy / len * hw * 0.6;
+      const A = [ax - ex + nx, ay - ey + ny], B = [ax - ex - nx, ay - ey - ny], C = [bx + ex - nx, by + ey - ny], D = [bx + ex + nx, by + ey + ny];
+      for (const p of [A, B, C, A, C, D]) { pos.push(p[0], y, -p[1]); col.push(c.r, c.g, c.b); }
+    }
+  }
+  if (!pos.length) return null;
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+  const n = new Float32Array(pos.length);
+  for (let i = 1; i < n.length; i += 3) n[i] = 1;
+  g.setAttribute('normal', new THREE.BufferAttribute(n, 3));
+  return g;
+}
+
+function buildGraph(roads) {
+  const index = new Map(), pos = [], adj = [], edges = [];
+  const key = p => Math.round(p[0] * 2) + '_' + Math.round(p[1] * 2);
+  const node = p => {
+    const k = key(p);
+    let id = index.get(k);
+    if (id === undefined) { id = pos.length; index.set(k, id); pos.push(p); adj.push([]); }
+    return id;
+  };
+  for (const r of roads) {
+    if (!r.walk) continue;
+    for (let i = 0; i < r.pts.length - 1; i++) {
+      const a = node(r.pts[i]), b = node(r.pts[i + 1]);
+      if (a === b) continue;
+      adj[a].push(b); adj[b].push(a); edges.push([a, b]);
+    }
+  }
+  return { pos, adj, edges };
+}
+// </core>
+
+const canvas = document.getElementById('c');
+const statusEl = document.getElementById('status');
+const statsEl = document.getElementById('stats');
+const setStatus = (msg, err) => { statusEl.textContent = msg; statusEl.className = err ? 'err' : ''; };
+
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+const scene = new THREE.Scene();
+const BG = 0xd6cfc1;
+scene.background = new THREE.Color(BG);
+const camera = new THREE.PerspectiveCamera(40, 1, 1, 20000);
+const controls = new MapControls(camera, canvas);
+controls.enableDamping = true;
+controls.maxPolarAngle = 1.2;
+controls.minDistance = 40;
+
+scene.add(new THREE.HemisphereLight(0xffffff, 0xa89c88, 2.2));
+const sun = new THREE.DirectionalLight(0xffffff, 1.6);
+sun.position.set(-0.6, 1, 0.45);
+scene.add(sun);
+
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshLambertMaterial({ color: BG }));
+ground.rotation.x = -Math.PI / 2;
+scene.add(ground);
+
+const cityGroup = new THREE.Group();
+scene.add(cityGroup);
+let buildingsMesh = null;
+const buildingMat = new THREE.MeshLambertMaterial({ vertexColors: true });
+const roadMat = new THREE.MeshLambertMaterial({ vertexColors: true });
+const plazaMat = new THREE.MeshLambertMaterial({ color: 0xebe3d3 });
+const waterMat = new THREE.MeshLambertMaterial({ color: 0x86aecb });
+
+const zGeo = (() => {
+  const body = new THREE.CapsuleGeometry(0.35, 1.0, 3, 8); body.translate(0, 0.85, 0);
+  const nose = new THREE.ConeGeometry(0.18, 0.5, 6); nose.rotateX(Math.PI / 2); nose.translate(0, 1.4, 0.42);
+  return mergeGeometries([body, nose], false);
+})();
+const MAXZ = 3000, NS = 4;
+const zMesh = new THREE.InstancedMesh(zGeo, new THREE.MeshLambertMaterial({ color: 0x5f9e34 }), MAXZ);
+const sMesh = new THREE.InstancedMesh(zGeo, new THREE.MeshLambertMaterial({ color: 0x2f6fd6 }), NS);
+const ringGeo = new THREE.RingGeometry(2.2, 3.0, 24); ringGeo.rotateX(-Math.PI / 2);
+const rMesh = new THREE.InstancedMesh(ringGeo, new THREE.MeshBasicMaterial({ color: 0x2f6fd6, transparent: true, opacity: 0.85 }), NS);
+for (const m of [zMesh, sMesh, rMesh]) { m.frustumCulled = false; m.instanceMatrix.setUsage(THREE.DynamicDrawUsage); scene.add(m); }
+
+let city = null, graph = null, extent = 1000;
+const zombies = [], survivors = [];
+
+function placeAgent(speed) {
+  const e = graph.edges[Math.floor(Math.random() * graph.edges.length)];
+  const [a, b] = Math.random() < 0.5 ? e : [e[1], e[0]];
+  const pa = graph.pos[a], pb = graph.pos[b];
+  const len = Math.hypot(pb[0] - pa[0], pb[1] - pa[1]);
+  return { a, b, len, t: Math.random() * len, speed };
+}
+
+function spawn() {
+  zombies.length = 0; survivors.length = 0;
+  if (!graph || !graph.edges.length) return;
+  const n = +document.getElementById('nZ').value;
+  for (let i = 0; i < n; i++) zombies.push(placeAgent(0.8 + Math.random() * 0.6));
+  for (let i = 0; i < NS; i++) survivors.push(placeAgent(1.8));
+}
+
+const dummy = new THREE.Object3D();
+function stepAgents(list, mesh, dt, ring) {
+  const scale = document.getElementById('bigEnt').checked ? 3 : 1;
+  for (let i = 0; i < list.length; i++) {
+    const ag = list[i];
+    ag.t += ag.speed * dt;
+    let guard = 0;
+    while (ag.t >= ag.len && guard++ < 20) {
+      ag.t -= ag.len;
+      const prev = ag.a; ag.a = ag.b;
+      const nb = graph.adj[ag.a];
+      const choices = nb.length > 1 ? nb.filter(x => x !== prev) : nb;
+      ag.b = choices[Math.floor(Math.random() * choices.length)];
+      const pa = graph.pos[ag.a], pb = graph.pos[ag.b];
+      ag.len = Math.max(Math.hypot(pb[0] - pa[0], pb[1] - pa[1]), 0.01);
+    }
+    const pa = graph.pos[ag.a], pb = graph.pos[ag.b];
+    const f = Math.min(ag.t / ag.len, 1);
+    const x = pa[0] + (pb[0] - pa[0]) * f, n = pa[1] + (pb[1] - pa[1]) * f;
+    dummy.position.set(x, 0.15, -n);
+    dummy.rotation.set(0, Math.atan2(pb[0] - pa[0], -(pb[1] - pa[1])), 0);
+    dummy.scale.setScalar(scale);
+    dummy.updateMatrix();
+    mesh.setMatrixAt(i, dummy.matrix);
+    if (ring) { dummy.rotation.set(0, 0, 0); dummy.position.y = 0.2; dummy.updateMatrix(); ring.setMatrixAt(i, dummy.matrix); }
+  }
+  mesh.count = list.length;
+  mesh.instanceMatrix.needsUpdate = true;
+  if (ring) { ring.count = list.length; ring.instanceMatrix.needsUpdate = true; }
+}
+
+function clearCity() {
+  for (const ch of [...cityGroup.children]) { ch.geometry.dispose(); cityGroup.remove(ch); }
+  buildingsMesh = null;
+}
+
+async function rebuildBuildings() {
+  if (!city) return;
+  if (buildingsMesh) { buildingsMesh.geometry.dispose(); cityGroup.remove(buildingsMesh); buildingsMesh = null; }
+  const realH = document.getElementById('realH').checked;
+  const g = await buildBuildings(city.buildings, realH, (i, n) => setStatus(`Construction des bâtiments… ${i} / ${n}`));
+  if (g) { buildingsMesh = new THREE.Mesh(g, buildingMat); cityGroup.add(buildingsMesh); }
+}
+
+function fitCamera() {
+  const d = extent;
+  camera.position.set(0, d * 0.95, d * 0.42);
+  controls.target.set(0, 0, 0);
+  controls.maxDistance = d * 3;
+  camera.far = d * 12;
+  camera.updateProjectionMatrix();
+  controls.update();
+}
+
+async function loadCity(c, label) {
+  clearCity();
+  city = c;
+  extent = c.extent;
+  ground.scale.set(extent * 6, extent * 6, 1);
+  const water = flatGeometry(c.water, 0.03); if (water) cityGroup.add(new THREE.Mesh(water, waterMat));
+  const plaza = flatGeometry(c.plazas, 0.06); if (plaza) cityGroup.add(new THREE.Mesh(plaza, plazaMat));
+  const roads = ribbonGeometry(c.roads); if (roads) cityGroup.add(new THREE.Mesh(roads, roadMat));
+  await rebuildBuildings();
+  graph = buildGraph(c.roads);
+  spawn();
+  fitCamera();
+  setStatus(label);
+  statsEl.textContent = `${c.buildings.length} bâtiments · ${c.roads.length} rues · ${graph.pos.length} nœuds de navigation`;
+}
+
+async function loadFile(file) {
+  try {
+    setStatus(`Lecture de ${file.name}…`);
+    const text = await file.text();
+    setStatus('Analyse des données…');
+    await new Promise(r => setTimeout(r, 0));
+    const t = text.trimStart();
+    let raw;
+    if (t[0] === '<') raw = parseOsmXml(t);
+    else {
+      const data = JSON.parse(t);
+      if (data.type === 'FeatureCollection') raw = parseGeoJSON(data);
+      else if (Array.isArray(data.elements)) raw = parseOverpass(data);
+      else throw new Error('Format non reconnu : attendu un GeoJSON, un JSON Overpass ou un fichier .osm.');
+    }
+    const c = project(raw);
+    if (!c.buildings.length) throw new Error('Aucun bâtiment trouvé. As-tu bien utilisé la requête fournie ?');
+    await loadCity(c, `${file.name} — données © OpenStreetMap contributors`);
+  } catch (e) {
+    setStatus(`Impossible de charger ce fichier : ${e.message}`, true);
+  }
+}
+
+function parseOsmXml(text) {
+  const doc = new DOMParser().parseFromString(text, 'application/xml');
+  if (doc.querySelector('parsererror')) throw new Error('Fichier .osm illisible.');
+  const nodes = new Map();
+  for (const n of doc.getElementsByTagName('node')) nodes.set(n.getAttribute('id'), { lat: +n.getAttribute('lat'), lon: +n.getAttribute('lon') });
+  const tagsOf = el => { const t = {}; for (const tg of el.getElementsByTagName('tag')) t[tg.getAttribute('k')] = tg.getAttribute('v'); return t; };
+  const wayGeom = new Map(), elements = [];
+  for (const w of doc.getElementsByTagName('way')) {
+    const geom = [...w.getElementsByTagName('nd')].map(nd => nodes.get(nd.getAttribute('ref'))).filter(Boolean);
+    wayGeom.set(w.getAttribute('id'), geom);
+    elements.push({ type: 'way', tags: tagsOf(w), geometry: geom });
+  }
+  for (const r of doc.getElementsByTagName('relation')) {
+    const members = [...r.getElementsByTagName('member')].filter(m => m.getAttribute('type') === 'way')
+      .map(m => ({ type: 'way', role: m.getAttribute('role'), geometry: wayGeom.get(m.getAttribute('ref')) }));
+    elements.push({ type: 'relation', tags: tagsOf(r), members });
+  }
+  return parseOverpass({ elements });
+}
+
+function resize() {
+  const w = window.innerWidth, h = window.innerHeight;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+}
+window.addEventListener('resize', resize);
+resize();
+
+document.getElementById('btnDemo').addEventListener('click', () => loadCity(generateDemo(), 'Ville de démonstration générée (pas encore Toulouse)'));
+document.getElementById('file').addEventListener('change', e => { if (e.target.files[0]) loadFile(e.target.files[0]); e.target.value = ''; });
+document.getElementById('realH').addEventListener('change', async () => { await rebuildBuildings(); setStatus('Bâtiments reconstruits.'); });
+document.getElementById('btnCam').addEventListener('click', fitCamera);
+const nZ = document.getElementById('nZ'), spd = document.getElementById('spd');
+nZ.addEventListener('input', () => { document.getElementById('nZv').textContent = nZ.value; });
+nZ.addEventListener('change', spawn);
+spd.addEventListener('input', () => { document.getElementById('spdv').textContent = spd.value + '×'; });
+document.getElementById('btnCopy').addEventListener('click', async () => {
+  const q = document.getElementById('q');
+  const msg = document.getElementById('copyMsg');
+  try { await navigator.clipboard.writeText(q.value); msg.textContent = 'Copiée.'; }
+  catch (e) { q.focus(); q.select(); msg.textContent = 'Sélectionnée : Ctrl+C pour copier.'; }
+});
+
+const drop = document.getElementById('drop');
+let dragDepth = 0;
+window.addEventListener('dragenter', e => { e.preventDefault(); dragDepth++; drop.classList.add('on'); });
+window.addEventListener('dragleave', e => { e.preventDefault(); if (--dragDepth <= 0) { dragDepth = 0; drop.classList.remove('on'); } });
+window.addEventListener('dragover', e => e.preventDefault());
+window.addEventListener('drop', e => { e.preventDefault(); dragDepth = 0; drop.classList.remove('on'); const f = e.dataTransfer.files[0]; if (f) loadFile(f); });
+
+const clock = new THREE.Clock();
+let frames = 0, fpsT = 0, fps = 0;
+function loop() {
+  const dt = Math.min(clock.getDelta(), 0.1);
+  frames++; fpsT += dt;
+  if (fpsT > 1) { fps = Math.round(frames / fpsT); frames = 0; fpsT = 0; if (city) statsEl.textContent = statsEl.textContent.replace(/ · \d+ ips$/, '') + ` · ${fps} ips`; }
+  const show = document.getElementById('showEnt').checked;
+  zMesh.visible = sMesh.visible = rMesh.visible = show;
+  if (show && graph && graph.edges.length) {
+    const sdt = dt * +spd.value;
+    stepAgents(zombies, zMesh, sdt, null);
+    stepAgents(survivors, sMesh, sdt, rMesh);
+  }
+  controls.update();
+  renderer.render(scene, camera);
+  requestAnimationFrame(loop);
+}
+loop();
+
+loadCity(generateDemo(), 'Ville de démonstration générée (pas encore Toulouse)').catch(e => setStatus('Erreur : ' + e.message, true));
+</script>
+</body>
+</html>

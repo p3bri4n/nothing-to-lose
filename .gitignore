@@ -1,0 +1,34 @@
+# Sorties des outils (on garde les dossiers, pas leur contenu)
+runs/*
+!runs/.gitkeep
+shots/*
+!shots/.gitkeep
+
+# Rust
+target/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Node
+node_modules/
+dist/
+
+# Modèles et données lourdes
+*.safetensors
+*.onnx
+bake/cache/
+
+# Divers
+.DS_Store
+.env
+
+# Terraform : état et variables locales hors dépôt ; le verrou des providers est versionné
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+crash.log

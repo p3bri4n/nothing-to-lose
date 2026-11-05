@@ -1,0 +1,37 @@
+# Journal de développement
+
+Une entrée par session de travail, nommée `AAAA-MM-JJ-sujet.md` (plusieurs sessions le même jour : suffixe `-2`, `-3`). Écrite en fin de session par `documentaliste`, à partir du compte rendu de la session principale.
+
+**Lire les deux ou trois dernières entrées en début de session** : c'est le moyen de reprendre le fil.
+
+## Index
+
+| Date | Sujet | Jalon |
+|---|---|---|
+| 2026-11-05 | [Conception initiale et squelette du dépôt](2026-11-05-conception.md) | avant P0 |
+
+## Modèle d'entrée
+
+```markdown
+# AAAA-MM-JJ — Sujet
+
+- **Jalon** : P0, P1…
+- **Objectif de la session** : une phrase.
+
+## Fait
+- …
+
+## Résultats
+- `just check` : OK / en échec (détail)
+- `just eval` : écarts par rapport à la référence, s'il y a lieu
+
+## Décisions
+- Décisions structurantes posées à l'utilisateur : liens vers `docs/decisions/NNNN-…`
+- Choix techniques mineurs pris en autonomie, avec leur raison
+
+## Problèmes et points ouverts
+- …
+
+## Prochaines étapes
+- …
+```

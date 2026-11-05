@@ -1,0 +1,13 @@
+# Copier en terraform.tfvars (ignoré par Git) et compléter.
+# Le jeton GitHub ne va PAS ici : exporter GITHUB_TOKEN dans le shell.
+
+github_owner = "p3bri4n"
+
+# Interrupteurs des workflows
+gpu_eval_enabled = false # true au jalon P2, une fois le runner GPU enregistré
+deploy_enabled   = false # true au jalon du replay public
+
+# Déploiement Cloudflare Pages (laisser vide pour l'instant)
+cloudflare_account_id    = ""
+cloudflare_api_token     = ""
+cloudflare_pages_project = "say-again"

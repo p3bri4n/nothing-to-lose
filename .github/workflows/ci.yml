@@ -1,0 +1,82 @@
+# CI sans GPU : tourne sur les runners hébergés par GitHub, y compris pour les pull requests.
+# Le job « ci-cpu » est le check obligatoire de la branche principale (voir infra/terraform/ruleset.tf).
+# Chaque étape ne s'exécute que si la partie du projet correspondante existe déjà.
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci-cpu:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Liens internes de la documentation
+        run: python3 tools/check_links.py
+
+      # --- Rust (à partir de P1) ---
+      - name: Toolchain Rust
+        if: hashFiles('Cargo.toml') != ''
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+          targets: wasm32-unknown-unknown
+      - name: Cache Rust
+        if: hashFiles('Cargo.toml') != ''
+        uses: Swatinem/rust-cache@v2
+      - name: Formatage Rust
+        if: hashFiles('Cargo.toml') != ''
+        run: cargo fmt --all -- --check
+      - name: Clippy
+        if: hashFiles('Cargo.toml') != ''
+        run: cargo clippy --workspace --all-targets -- -D warnings
+      - name: Tests Rust
+        if: hashFiles('Cargo.toml') != ''
+        run: cargo test --workspace
+      - name: Compilation WebAssembly
+        if: hashFiles('crates/wasm/Cargo.toml') != ''
+        run: cargo build -p wasm --target wasm32-unknown-unknown --release
+
+      # --- Python (à partir de P0 pour bake/, P2 pour services/brain) ---
+      - name: uv
+        if: hashFiles('pyproject.toml') != ''
+        uses: astral-sh/setup-uv@v5
+      - name: Lint et tests Python
+        if: hashFiles('pyproject.toml') != ''
+        run: |
+          uv run ruff check .
+          uv run pytest -q
+
+      # --- Viewer web (à partir de P0) ---
+      - name: Node
+        if: hashFiles('web/viewer/package.json') != ''
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: web/viewer/package-lock.json
+      - name: Build du viewer
+        if: hashFiles('web/viewer/package.json') != ''
+        working-directory: web/viewer
+        run: |
+          npm ci
+          npm run build
+
+      # --- Contrôles de la simulation sans IA (à partir de P1) ---
+      - name: just
+        if: hashFiles('Cargo.toml') != ''
+        uses: extractions/setup-just@v2
+      - name: just check (invariants, non-régression, mini-partie)
+        if: hashFiles('Cargo.toml') != ''
+        run: just check
