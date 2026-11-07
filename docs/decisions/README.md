@@ -29,7 +29,7 @@ Les décisions antérieures à la création du dépôt sont dans le journal des 
 | [0019](0019-accroche-command-humanity-last-hope.md) | 2026-11-05 | Accroche courte officielle : « Command humanity's last hope » (sous-titre du key art ; complète 0017) | décidée |
 | [0020](0020-securite-hook-formatage.md) | 2026-11-07 | Sécurité du hook de formatage : refus si `mise.toml`, `mise.local.toml`, `.prettierrc.json` ou `rust-toolchain.toml` diffèrent de HEAD | décidée |
 | [0021](0021-fusion-compte-machine-agents.md) | 2026-11-07 | Fusion des pull requests : compte machine pour les agents (rôle Write), une approbation requise, fusion par l'utilisateur seul (précise 0013, étape E10b) | décidée |
-| [0022](0022-panne-garde-bash.md) | 2026-11-07 | Panne du garde-fou Bash : refus limité aux commandes `git` et `gh`, nombre d'erreurs affiché à l'ouverture de session (non encore codé) | décidée |
+| [0022](0022-panne-garde-bash.md) | 2026-11-07 | Panne du garde-fou Bash : refus limité aux commandes `git` et `gh`, nombre d'erreurs affiché à l'ouverture de session (codé en E10) | décidée |
 | [0023](0023-perimetre-garde-bash.md) | 2026-11-07 | Périmètre du garde-fou Bash : règles ajoutées au-delà du plan conservées ; garde sur Edit/Write reporté | décidée |
 | [0024](0024-jeton-compte-machine-classique.md) | 2026-11-07 | Jeton du compte machine : jeton classique à portée `repo` (précise 0021 : pas de granularité fine sur un dépôt personnel ; précisé par 0027) | décidée |
 | [0025](0025-barriere-serveur-codeowners.md) | 2026-11-07 | Barrière serveur : CODEOWNERS et revue du propriétaire (`require_code_owner_review`) ; les approbations du compte machine ne comptent plus (précise 0021, étape E10b) | décidée |
