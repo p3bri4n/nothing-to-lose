@@ -23,23 +23,30 @@ concurrency:
 jobs:
   deploy:
     if: vars.DEPLOY_ENABLED == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     environment: production
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          node-version: 20
-          cache: npm
-          cache-dependency-path: web/viewer/package-lock.json
+          persist-credentials: false
+      # Node vient de mise (mise.toml), comme en local et dans ci.yml. Seul node est installé.
+      - name: Node (mise)
+        uses: jdx/mise-action@82a612c5ab8bcda7cc5db6b7e81a8e7584c3dc6e # v5.2.3
+        with:
+          version: 2026.11.0
+          install_args: node
+          # Cache distinct de celui de ci-cpu : celui-ci ne contient que node.
+          cache_key_prefix: mise-v1-deploy
+          cache: true
+          github_token: ${{ secrets.GITHUB_TOKEN }}
       - name: Build
         working-directory: web/viewer
         run: |
           npm ci
           npm run build
       - name: Publication sur Cloudflare Pages
-        uses: cloudflare/wrangler-action@v3
+        uses: cloudflare/wrangler-action@953926a2e2182532811c01a25e53647d93bf07c0 # v4.1.3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
