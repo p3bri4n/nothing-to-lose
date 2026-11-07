@@ -4,6 +4,7 @@
 Usage: python3 tools/check_links.py  (from the repository root)
 Exit code 1 if at least one link is broken.
 """
+
 import pathlib
 import re
 import sys

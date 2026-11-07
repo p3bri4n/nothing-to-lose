@@ -7,6 +7,7 @@ the Git state, then prints a JSON object on stdout:
   - hookSpecificOutput.additionalContext: injected in the model context (also open issues).
 Never fails: any error yields a short message and exit code 0.
 """
+
 import json
 import os
 import pathlib
@@ -37,7 +38,9 @@ def latest_journal(root: pathlib.Path):
 
 
 def section(text: str, title: str) -> str:
-    match = re.search(rf"^## {re.escape(title)}\s*\n(.*?)(?=^## |\Z)", text, re.S | re.M)
+    match = re.search(
+        rf"^## {re.escape(title)}\s*\n(.*?)(?=^## |\Z)", text, re.S | re.M
+    )
     return match.group(1).strip() if match else ""
 
 
@@ -48,7 +51,11 @@ def build(root: pathlib.Path, full: bool) -> str:
         text = journal.read_text(encoding="utf-8")
         title = text.splitlines()[0].lstrip("# ").strip() if text else journal.name
         lines.append(f"Dernier journal : {journal.name} — {title}")
-        names = ("Prochaines étapes", "Problèmes et points ouverts") if full else ("Prochaines étapes",)
+        names = (
+            ("Prochaines étapes", "Problèmes et points ouverts")
+            if full
+            else ("Prochaines étapes",)
+        )
         for name in names:
             body = section(text, name)
             if body:
@@ -59,8 +66,11 @@ def build(root: pathlib.Path, full: bool) -> str:
     last = git(root, "log", "-1", "--format=%h %s")
     status = git(root, "status", "--short")
     changed = len(status.splitlines()) if status else 0
-    lines += ["", f"Git : branche {branch or '?'}, dernier commit {last or '?'}",
-              f"Fichiers modifiés non commités : {changed}"]
+    lines += [
+        "",
+        f"Git : branche {branch or '?'}, dernier commit {last or '?'}",
+        f"Fichiers modifiés non commités : {changed}",
+    ]
     remotes = git(root, "remote")
     if not remotes:
         lines.append("Aucun remote configuré (premier push pas encore fait).")
