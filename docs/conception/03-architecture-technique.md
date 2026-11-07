@@ -85,7 +85,7 @@ Le **mode live** (commandant humain) impose un profil allégé : 4 à 6 héros, 
 
 ## Déploiement
 
-**CI/CD [Décidé]** : GitHub configuré par Terraform (état local hors dépôt), dépôt public dès le départ, CI sans GPU sur les runners GitHub, évaluation avec les modèles sur un runner GPU auto-hébergé (jamais déclenchée par une pull request), viewer de replays déployé sur Cloudflare Pages. Détails dans `docs/technique/ci-cd.md` et les décisions 0001 à 0004 du dépôt.
+**CI/CD [Décidé]** : GitHub configuré par Terraform (état local hors dépôt), dépôt public dès le départ, CI sans GPU sur les runners GitHub, évaluation avec les modèles sur un runner GPU auto-hébergé (jamais déclenchée par une pull request), viewer de replays déployé sur Cloudflare Pages. Détails dans `docs/technique/ci-cd.md` et les décisions 0001 à 0004 du dépôt. Fusion des pull requests réservée à l'utilisateur ; les agents ouvrent leurs pull requests avec un compte machine à droits limités (décision 0021 du dépôt, mise en œuvre en E10b).
 
 
 `docker compose` local : `sim`, `brain`, `tabbyapi`, `radio`, `client`, `chat-bridge`, `recorder`.

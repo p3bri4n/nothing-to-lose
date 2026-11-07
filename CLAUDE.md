@@ -80,7 +80,12 @@ Définies dans `justfile`. Celles marquées (à venir) n'existent pas encore et 
 | `just viewer` | Lancer le viewer local | P0 (à venir) |
 | `just shots` | Captures d'écran automatisées (Playwright) dans `shots/` | P0 (à venir) |
 | `just sim --seed N --minutes M --out runs/N/` | Partie headless : `journal.jsonl`, `summary.json`, `violations.txt` | P1 (à venir) |
-| `just check` | Tests, non-régression, invariants, mini-partie | P1 (à venir) |
+| `just check` | Contrôle complet : pour l'instant `just lint` seul ; P1 y ajoute tests, non-régression, invariants, mini-partie | PP / P1 |
+| `just lint` | Versions des outils, tests des outils, formatage, liens, secrets, workflows, Terraform | disponible |
+| `just fmt` / `just fmt-check` | Formater / vérifier le formatage (Markdown exclu) | disponible |
+| `just versions` / `just tools-test` / `just docs-links` / `just actionlint` / `just secrets-scan` | Contrôles individuels (appelés par `just lint`) | disponible |
+| `just setup` / `just hooks-install` | Installer les outils (mise), activer les hooks Git : action locale, une fois par clone | disponible |
+| `just verify-pp <format\|versions\|secrets>` | Vérifications automatiques des critères du jalon PP | disponible |
 | `just inspect --seed N --tick T --agent ID` | État, perception, décisions d'un agent | P2 (à venir) |
 | `just eval --seeds 50` | Lot de parties, `report.md` comparé à `reports/baseline.json` | P2 (à venir) |
 | `just tf-init` / `just tf-check` / `just tf-plan` | Infrastructure GitHub (Terraform) : initialiser, valider, prévisualiser | disponible |
@@ -111,6 +116,13 @@ Détails : [`docs/technique/ci-cd.md`](docs/technique/ci-cd.md).
 9. Fin de session : entrée de journal par `documentaliste`.
 
 Détails : [`docs/conception/22-boucle-de-retour.md`](docs/conception/22-boucle-de-retour.md).
+
+## Circuit Git
+
+Détails : [`docs/technique/circuit-git.md`](docs/technique/circuit-git.md).
+
+- Une branche et une pull request par changement : `git switch -c <sujet>` depuis `main` à jour, commits en français, `git push -u origin HEAD`, `gh pr create` avec la liste de contrôle remplie, `gh pr checks --watch --required`, puis prévenir l'utilisateur.
+- **L'utilisateur seul fusionne.** Les agents n'utilisent jamais `gh pr merge`, ne poussent pas vers `main`, ne forcent jamais un push et ne contournent jamais les hooks (`--no-verify`, `-n`, désactivation de `core.hooksPath`). Un garde-fou (`tools/hooks/guard_bash.py`) bloque ces commandes ; en cas de blocage, corriger la cause plutôt que contourner.
 
 ## Règles techniques non négociables
 

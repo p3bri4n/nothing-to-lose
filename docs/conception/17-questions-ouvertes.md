@@ -50,3 +50,11 @@
 | — | Accroche (suite, 5 novembre 2026) | Le speech officiel, signature « commandez avec brio ! », à la place de « Lead or Fade: Your Command » — décision [0017](../decisions/0017-accroche-le-speech.md), qui remplace 0006 |
 | — | Accroche (suite, 5 novembre 2026) | Accroche courte officielle : « Command humanity's last hope » (sous-titre du key art) ; le speech reste le texte long. La signature « commandez avec brio ! » reste celle de la description (précision de l'utilisateur) — décision [0019](../decisions/0019-accroche-command-humanity-last-hope.md), qui complète 0017 |
 | — | Outillage et circuit Git du jalon PP (5 novembre 2026) | Hooks Git maison, gitleaks figé via mise, `mise-action` en CI, liste de contrôle des PR bloquante, versions exactes, Markdown hors formatage, identité des agents et fusion réservée à l'utilisateur, séquencement de PP, sandbox reporté (Claudeus) — décisions [0007](../decisions/0007-hooks-git-scripts-maison.md) à [0015](../decisions/0015-sandbox-reporte-apres-pp.md) |
+
+## Journal des décisions (suite, 7 novembre 2026)
+
+| # | Question | Décision |
+|---|---|---|
+| — | Fusion des pull requests (revue d'architecte d'E10) | Compte machine pour les agents (rôle Write, pas administrateur), 1 approbation requise, fusion par l'utilisateur seul en administrateur ; étape E10b séparée d'E10 — décision [0021](../decisions/0021-fusion-compte-machine-agents.md), qui précise [0013](../decisions/0013-identite-agents-fusion.md) |
+| — | Panne du garde-fou Bash | Refus limité aux commandes `git` et `gh` en cas d'erreur, nombre d'erreurs de `guard.log` affiché à l'ouverture de session (à coder) — décision [0022](../decisions/0022-panne-garde-bash.md) |
+| — | Périmètre du garde-fou Bash | Règles ajoutées au-delà du plan conservées ; garde sur Edit et Write pour `.git/`, `.githooks/`, `.claude/settings.json` reporté à la refonte des agents — décision [0023](../decisions/0023-perimetre-garde-bash.md) |
