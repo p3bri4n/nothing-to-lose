@@ -1,6 +1,6 @@
 # Outillage : versions des outils, formatage et vérification
 
-*Mise à jour : 2026-11-07 (ajout du hook de formatage à l'édition, de `just verify-pp` et de ses sous-commandes `format` et `secrets`, des recettes de hooks Git et de `secrets-scan`)*
+*Mise à jour : 2026-11-07 (ajout du hook de formatage à l'édition, de `just verify-pp` et de ses sous-commandes `format` et `secrets`, des recettes de hooks Git et de `secrets-scan`, de la recette `actionlint` et du test de `check_pr_checklist.py`)*
 
 Décrit le code **tel qu'il existe** : source unique des versions, commande `just versions`, formatage (`tools/fmt.py`, `just fmt`, `just fmt-check`), recette `just lint`, tests des outils, sous-commande `tools/verify_pp.sh versions`, procédure de mise à jour. La politique (versions exactes partout) est dans [0011](../decisions/0011-politique-versions-exactes.md) ; le Markdown hors formatage est dans [0012](../decisions/0012-markdown-hors-formatage.md). Les sources et dates des versions sont dans [la note de recherche](../recherches/2026-11-05-outillage-pp.md).
 
@@ -155,10 +155,11 @@ Fichiers à la racine du dépôt, lus par les formateurs :
 | `hooks-install` | `git config core.hooksPath .githooks` (action locale ; appelée par `setup`). Voir [`hooks-git.md`](hooks-git.md). |
 | `pre-commit` | `gitleaks git --pre-commit --staged --redact`, puis `just docs-links` (appelée par le hook Git). |
 | `secrets-scan` | `gitleaks git --redact` sur tout l'historique. |
-| `lint` | `versions`, `tools-test`, `fmt-check`, `docs-links`, `secrets-scan`, `tf-check`. |
+| `actionlint` | `actionlint -config-file .github/actionlint.yaml` (workflows GitHub). Voir [`modeles-github.md`](modeles-github.md). |
+| `lint` | `versions`, `tools-test`, `fmt-check`, `docs-links`, `secrets-scan`, `actionlint`, `tf-check`. |
 | `check` | `lint` seul pour l'instant (P1 y ajoutera tests, non-régression, invariants, mini-partie). |
 
-`lint` n'inclut pas encore `actionlint` (étape E8) : le commentaire du `justfile` le rappelle. `secrets-scan` y figure depuis l'étape E7 et appelle `gitleaks` du `PATH` (donc `mise exec -- just lint` si mise n'est pas activé dans le shell). `tf-check` vérifie `terraform fmt -check -recursive` puis `terraform validate` dans `infra/terraform/`.
+`actionlint` y figure depuis l'étape E8, et `secrets-scan` depuis l'étape E7 ; l'un et l'autre appellent leur outil du `PATH` (donc `mise exec -- just lint` si mise n'est pas activé dans le shell). `tf-check` vérifie `terraform fmt -check -recursive` puis `terraform validate` dans `infra/terraform/`.
 
 ## Hook de formatage à l'édition
 
@@ -170,7 +171,7 @@ Le hook `PostToolUse` de `.claude/settings.json` lance `tools/hooks/format_on_ed
 python3 -m unittest discover -s tools/tests
 ```
 
-- Fichiers : `tools/tests/__init__.py` (vide), `tools/tests/test_check_tool_versions.py`, `tools/tests/test_fmt.py` et `tools/tests/test_git_hooks.py` (hook Git `pre-commit` avec un faux `mise`, voir [`hooks-git.md`](hooks-git.md)) et `tools/tests/test_format_on_edit.py` (surtout hermétique : `subprocess.run` et `subprocess.Popen` sont remplacés par des faux ; quelques tests utilisent le vrai `git` dans un dépôt jetable ou un vrai processus enfant ; voir [`hook-format-on-edit.md`](hook-format-on-edit.md)).
+- Fichiers : `tools/tests/__init__.py` (vide), `tools/tests/test_check_tool_versions.py`, `tools/tests/test_fmt.py` et `tools/tests/test_git_hooks.py` (hook Git `pre-commit` avec un faux `mise`, voir [`hooks-git.md`](hooks-git.md)) `tools/tests/test_check_pr_checklist.py` (contrôle de la liste de contrôle des PR, hermétique, voir [`modeles-github.md`](modeles-github.md)) et `tools/tests/test_format_on_edit.py` (surtout hermétique : `subprocess.run` et `subprocess.Popen` sont remplacés par des faux ; quelques tests utilisent le vrai `git` dans un dépôt jetable ou un vrai processus enfant ; voir [`hook-format-on-edit.md`](hook-format-on-edit.md)).
 - **Hermétiques** pour `test_check_tool_versions.py` : `subprocess.run` est remplacé par un faux (`fake_run`) ; aucun outil réel n'est exécuté. La configuration est écrite dans un répertoire temporaire, et `REPO_ROOT` est redirigé vers lui (`MainTests.setUp`).
 - Classes de `test_check_tool_versions.py` : `ParseVersionTests`, `HelpersTests`, `CompareTests`, `FormatLineTests`, `RustToolchainTests`, `RunVersionTests`, `MainTests`.
 - Classes de `test_fmt.py` : `FormatterSelectionTest`, `PathFilteringTest`, `BuildCommandTest`, `RunFormatterTest`, `ResolveExplicitTest`, `MainTest` (hermétiques : aucun formateur n'est exécuté), `FixtureIntegrationTest` (une sous-épreuve par fixture, ignorée avec un message si `mise` ou le formateur manque ; disponibilité mise en cache, un seul `mise exec` par formateur) et `PrettierConfigIsolationTest` (un `prettier.config.js` piégé, qui écrit un fichier témoin, est placé dans un dossier temporaire à côté d'un `.js` : sans `--config` il s'exécute — contrôle —, avec la commande de `fmt.py` il ne s'exécute pas ; ignoré si `mise` ou prettier manque).

@@ -1,0 +1,38 @@
+name: Décision
+description: Préparer une décision structurante à poser à l'utilisateur
+title: "[décision] "
+labels: ["décision"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Une décision structurante n'est jamais tranchée par un agent seul : elle est posée à l'utilisateur, puis enregistrée dans docs/decisions/.
+  - type: textarea
+    id: contexte
+    attributes:
+      label: Contexte
+      description: Ce qui motive la décision, en quelques lignes.
+    validations:
+      required: true
+  - type: textarea
+    id: options
+    attributes:
+      label: Options
+      description: Deux à quatre options, avec leurs compromis.
+    validations:
+      required: true
+  - type: textarea
+    id: recommandation
+    attributes:
+      label: Recommandation
+      description: L'option recommandée et pourquoi.
+    validations:
+      required: false
+  - type: textarea
+    id: documents
+    attributes:
+      label: Documents touchés
+      description: Fichiers de docs/conception/, docs/decisions/ ou du code concernés.
+      placeholder: "docs/conception/17-questions-ouvertes.md"
+    validations:
+      required: false

@@ -1,0 +1,66 @@
+name: Bug
+description: Signaler un comportement incorrect de la simulation, des IA ou du viewer
+title: "[bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Renseigner la seed, le tick et l'agent permet de rejouer le bug depuis le journal.
+  - type: input
+    id: seed
+    attributes:
+      label: Seed
+      placeholder: "42"
+    validations:
+      required: true
+  - type: input
+    id: tick
+    attributes:
+      label: Tick
+      placeholder: "1234"
+    validations:
+      required: true
+  - type: input
+    id: agent
+    attributes:
+      label: Agent
+      description: Identifiant de l'agent concerné (zombie ou survivant), si connu.
+      placeholder: "z-017"
+    validations:
+      required: false
+  - type: input
+    id: commit
+    attributes:
+      label: Commit
+      description: Hash du commit testé (git rev-parse --short HEAD).
+      placeholder: "a1b2c3d"
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Commande de reproduction
+      description: La commande exacte lancée, par exemple `just sim --seed 42 --minutes 10 --out runs/42/`.
+      render: bash
+    validations:
+      required: true
+  - type: textarea
+    id: attendu
+    attributes:
+      label: Comportement attendu
+    validations:
+      required: true
+  - type: textarea
+    id: observe
+    attributes:
+      label: Comportement observé
+    validations:
+      required: true
+  - type: textarea
+    id: capture
+    attributes:
+      label: Capture
+      description: Glisser une capture d'écran ici, si utile. Ne joindre aucun secret ni fichier de configuration local.
+    validations:
+      required: false
