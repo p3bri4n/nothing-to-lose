@@ -8,6 +8,9 @@ the Git state, then prints a JSON object on stdout:
 It also warns when the Bash guard (guard_bash.py) logged failures: the number of
 ``hook error`` lines of ``.cache/hooks/guard.log`` (decision U2: a failing guard refuses
 git/gh commands, so the user must hear about it).
+It also warns, without ever printing a value, when the GitHub identity of the session is not
+the agents machine account: ``GITHUB_TOKEN`` (the owner's administration token) present, or
+``GH_TOKEN`` absent (docs/technique/compte-machine-agents.md).
 Never fails: any error yields a short message and exit code 0.
 """
 
@@ -17,6 +20,7 @@ import pathlib
 import re
 import subprocess
 import sys
+from collections.abc import Mapping
 
 
 def git(root: pathlib.Path, *args: str) -> str:
@@ -42,6 +46,28 @@ def guard_error_count(root: pathlib.Path) -> int:
     return sum(1 for line in text.splitlines() if GUARD_ERROR_MARKER in line)
 
 
+def token_warning(environ: Mapping[str, str]) -> str | None:
+    """Warning about the GitHub credentials of the session, or None. Never shows a value."""
+    problems = []
+    if environ.get("GITHUB_TOKEN"):
+        problems.append(
+            "GITHUB_TOKEN est présent (jeton d'administration du propriétaire ?) : "
+            "il ne doit pas être dans l'environnement des agents"
+        )
+    if not environ.get("GH_TOKEN"):
+        problems.append(
+            "GH_TOKEN est absent : gh et git n'utilisent pas le compte machine des agents"
+        )
+    if not problems:
+        return None
+    return (
+        "Identité GitHub : "
+        + " ; ".join(problems)
+        + ". Lancer Claude Code comme décrit dans docs/technique/compte-machine-agents.md "
+        "(étape (f)), ou prévenir l'utilisateur."
+    )
+
+
 def latest_journal(root: pathlib.Path):
     entries = [
         p
@@ -60,7 +86,9 @@ def section(text: str, title: str) -> str:
     return match.group(1).strip() if match else ""
 
 
-def build(root: pathlib.Path, full: bool) -> str:
+def build(
+    root: pathlib.Path, full: bool, environ: Mapping[str, str] | None = None
+) -> str:
     lines = ["Nothing To Lose — où on en est"]
     journal = latest_journal(root)
     if journal:
@@ -98,6 +126,9 @@ def build(root: pathlib.Path, full: bool) -> str:
             "refusées dans ce cas). Voir docs/technique/garde-fous-bash.md ; prévenir "
             "l'utilisateur."
         )
+    warning = token_warning(os.environ if environ is None else environ)
+    if warning:
+        lines.append(warning)
     return "\n".join(lines)
 
 

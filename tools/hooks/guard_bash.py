@@ -20,7 +20,14 @@ an explanation in French on stderr (nothing on stdout), the commands listed in
   ``gh secret|variable set|delete``, ``gh alias set|import`` and the ``gh api`` calls
   that merge a pull request or change refs, contents, rulesets, branch protection or
   the settings of the repository; a ``gh api`` call too opaque to be judged (GraphQL
-  query read from a file or computed, write to an unknown endpoint) is refused too.
+  query read from a file or computed, write to an unknown endpoint) is refused too;
+* the agents' GitHub credentials: ``gh auth token|login|logout|switch|refresh``,
+  ``gh auth status --show-token``, assigning ``GH_TOKEN``, ``GITHUB_TOKEN``,
+  ``GH_ENTERPRISE_TOKEN`` or ``GITHUB_ENTERPRISE_TOKEN`` (before a command, after
+  ``env``, in ``export`` / ``declare``) and removing them (``unset``, ``env -u``,
+  ``export -n``). Reading them (``echo "${GH_TOKEN:+set}"``), ``gh auth status`` and
+  ``gh auth setup-git`` stay allowed. This is a partial palliative (decision 0021,
+  review of E10b): ``curl``, reading ``~/.config/gh`` or a file are not seen.
 
 How: the command is parsed by a small shell tokenizer (quotes, ``;``, ``&&``, ``||``,
 ``|``, newlines, ``$(...)``, backticks, heredocs, redirections), so that a command is
@@ -79,6 +86,12 @@ PLACEHOLDER = "\x00"
 GIT_OR_GH = re.compile(r"\b(git|gh)\b")
 
 ASSIGNMENT = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*=")
+# Environment variables that carry the GitHub identity of ``gh`` and ``git`` (HTTPS helper).
+TOKEN_VARIABLES = frozenset(
+    {"GH_TOKEN", "GITHUB_TOKEN", "GH_ENTERPRISE_TOKEN", "GITHUB_ENTERPRISE_TOKEN"}
+)
+# ``gh auth`` actions that read, replace or drop the stored credentials.
+GH_AUTH_FORBIDDEN = frozenset({"token", "login", "logout", "switch", "refresh"})
 SHELL_KEYWORDS = frozenset(
     {"!", "{", "}", "if", "then", "else", "elif", "do", "while", "until"}
 )
@@ -172,6 +185,21 @@ GH_API_OPAQUE = Violation(
     "(-F query=@…, --input) ou calculée par une substitution, ou écriture vers un "
     "endpoint calculé. Mettez la requête en ligne (-f query='…') et l'endpoint en "
     "clair dans la commande.",
+)
+GH_AUTH = Violation(
+    "gh-auth",
+    "gh auth token|login|logout|switch|refresh et gh auth status --show-token sont "
+    "interdits pour les agents : ils manipuleraient ou afficheraient les identifiants "
+    "GitHub. Le compte machine est fourni par l'environnement (GH_TOKEN) ; 'gh auth "
+    "status' (sans --show-token) reste permis. Voir docs/technique/garde-fous-bash.md.",
+)
+GH_TOKEN_ENV = Violation(
+    "gh-token-env",
+    "Affecter ou retirer GH_TOKEN, GITHUB_TOKEN, GH_ENTERPRISE_TOKEN ou "
+    "GITHUB_ENTERPRISE_TOKEN (devant une commande, après env, dans export/declare, "
+    "unset, env -u) est interdit pour les agents : cela ferait agir gh avec un autre "
+    "compte que le compte machine. Lire la variable reste permis. Voir "
+    "docs/technique/garde-fous-bash.md.",
 )
 TOO_COMPLEX = Violation(
     "too-complex",
@@ -551,8 +579,13 @@ def _forbidden_config_key(key: str) -> Violation | None:
 
 
 def _check_assignment(word: str) -> Violation | None:
-    """``GIT_CONFIG_*=...`` naming a forbidden key acts like ``git -c`` does."""
+    """``GIT_CONFIG_*=...`` naming a forbidden key acts like ``git -c`` does.
+
+    Assigning one of the ``TOKEN_VARIABLES`` is refused too, whatever the value.
+    """
     name, _, value = word.partition("=")
+    if name in TOKEN_VARIABLES:
+        return GH_TOKEN_ENV
     if not name.startswith("GIT_CONFIG"):
         return None
     # ``GIT_CONFIG_KEY_n`` holds a key, ``GIT_CONFIG_PARAMETERS`` quoted ``'key'='value'``.
@@ -835,6 +868,14 @@ class Analyzer:
                     violation = _check_assignment(arg)
                     if violation is not None:
                         return violation
+                if any(arg in ("-n", "+x") for arg in args) and any(
+                    arg in TOKEN_VARIABLES for arg in args
+                ):  # ``export -n GH_TOKEN``: drops the variable from the environment
+                    return GH_TOKEN_ENV
+                return None
+            if name == "unset":
+                if any(arg in TOKEN_VARIABLES for arg in args):
+                    return GH_TOKEN_ENV
                 return None
             if name in WRAPPERS:
                 unwrapped = self._unwrap(name, args, depth)
@@ -864,6 +905,8 @@ class Analyzer:
                 if "v" in arg[1:] or "V" in arg[1:]:  # only describes the command
                     return None
         if name == "env":
+            if _env_unsets_token(args):
+                return GH_TOKEN_ENV
             for index, arg in enumerate(args):
                 if arg in ("-S", "--split-string"):
                     return self.check(" ".join(args[index + 1 :]), depth + 1)
@@ -1146,6 +1189,15 @@ class Analyzer:
             return GH_ADMIN
         if group == "api":
             return _check_gh_api(args[positions[0] + 1 :])
+        if group == "auth":
+            # ``-h`` is ``--hostname`` here, not help: only ``--help`` runs nothing.
+            if "--help" in args:
+                return None
+            auth_words = [a for a in args[positions[0] + 1 :] if not a.startswith("-")]
+            if any(word in GH_AUTH_FORBIDDEN for word in auth_words):
+                return GH_AUTH
+            if "status" in auth_words and _shows_token(args[positions[0] + 1 :]):
+                return GH_AUTH
         return None
 
 
@@ -1169,6 +1221,46 @@ GH_VALUE_OPTIONS = frozenset(
     {"-R", "--repo", "--hostname", "-A", "--author-email", "-b", "--body"}
     | {"-F", "--body-file", "--match-head-commit", "-t", "--subject"}
 )
+
+
+def _shows_token(args: list[str]) -> bool:
+    """``--show-token`` or ``-t`` (alone or in a cluster such as ``-at``) of ``gh auth status``."""
+    index = 0
+    while index < len(args):
+        arg = args[index]
+        if arg == "--show-token" or arg.startswith("--show-token="):
+            return True
+        if arg in ("-h", "--hostname", "-q", "--jq", "--json"):
+            index += 1  # the next word is a value, whatever it looks like
+        elif arg.startswith("-") and not arg.startswith("--") and "t" in arg[1:]:
+            return True
+        index += 1
+    return False
+
+
+def _env_unsets_token(args: list[str]) -> bool:
+    """``env -u NAME`` / ``-uNAME`` / ``--unset NAME`` / ``--unset=NAME`` for a token variable."""
+    index = 0
+    while index < len(args):
+        arg = args[index]
+        following = args[index + 1] if index + 1 < len(args) else ""
+        if arg == "--":
+            return False
+        if arg in ("-u", "--unset"):
+            if following in TOKEN_VARIABLES:
+                return True
+            index += 1
+        elif arg.startswith("--unset=") or (
+            arg.startswith("-u") and not arg.startswith("--")
+        ):
+            if arg.partition("=")[2] in TOKEN_VARIABLES or arg[2:] in TOKEN_VARIABLES:
+                return True
+        elif arg in ("-C", "--chdir"):
+            index += 1
+        elif not arg.startswith("-") and not ASSIGNMENT.match(arg):
+            return False  # the wrapped command starts here
+        index += 1
+    return False
 
 
 def _asks_for_help(args: list[str]) -> bool:

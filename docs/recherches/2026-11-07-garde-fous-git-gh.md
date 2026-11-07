@@ -93,11 +93,104 @@ Limite : aucun shell disponible pendant cette recherche, donc `git --version` n'
 - [Available rules for rulesets (GitHub Docs)](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/available-rules-for-rulesets), pas de date affichée.
 - Non obtenu : la documentation du provider Terraform `github_repository_ruleset` (page du registre non lisible), donc les noms exacts des attributs `bypass_actors` côté Terraform restent à vérifier dans le provider installé.
 
-## Incertitudes à lever
+## 4. Ajout du 2026-11-07 (étape E10b)
 
-1. Version de Git installée : `git --version` non lancé (pas de shell dans cette recherche).
-2. Date exacte de sortie de Git 2.41.0 (non confirmée par une source trouvée).
-3. Comportement réel de `Bash(git push *)` et des motifs `:*` sur la version de Claude Code installée (aucun test effectué).
-4. Exécution des hooks PreToolUse en mode bypass : doc implicite, pas de test.
-5. Permission réelle requise pour `PUT .../merge` : table officielle lue, pas d'appel réel ni vérification de `X-Accepted-GitHub-Permissions`.
-6. Effet du bypass `pull_request` sur un administrateur du dépôt dans la configuration actuelle (à tester sur le dépôt, ou à vérifier dans `infra/terraform/`).
+- **Jeton à granularité fine et dépôt d'un autre compte personnel.** La page [Managing your personal access tokens](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens) (lue le 2026-11-07, pas de date affichée) limite un jeton à granularité fine à **un seul propriétaire de ressources** (« The token will only be able to access resources owned by the selected resource owner ») et liste parmi ses limites : « Using fine-grained personal access token to contribute to repositories where the user is an outside or repository collaborator ». Conséquence probable pour E10b : un compte machine collaborateur d'un dépôt **personnel** d'un autre compte ne peut pas créer de jeton à granularité fine pour ce dépôt, et doit utiliser un jeton classique (portée `repo`). **Non vérifié par un essai réel** ; confiance moyenne (la page parle d'« outside collaborator » et pas explicitement des dépôts personnels).
+- **Attributs Terraform** (provider `integrations/github` installé, `terraform providers schema -json`, 2026-11-07) : `github_repository_collaborator` (`repository`, `username`, `permission` ; « Must be 'push' for personal repositories », défaut `push`) ; `github_repository_ruleset` règle `pull_request` : `required_approving_review_count`, `dismiss_stale_reviews_on_push`, `require_last_push_approval`, `required_review_thread_resolution`.
+
+## 5. Ajout du 2026-11-07 : jetons, collaborateurs et fusion (recherche complémentaire E10b)
+
+Méthode : pages officielles `docs.github.com` et `github.blog` lues le 2026-11-07 avec un outil de résumé. Les citations ci-dessous sont des extraits fournis par cet outil, à relire dans le texte source avant de les citer dans une décision. Sauf mention contraire, les pages n'affichent pas de date de dernière mise à jour.
+
+### Question 1 : un jeton à granularité fine peut-il être limité au dépôt de A ?
+
+**Réponse courte.** Non, d'après la doc officielle lue le 2026-11-07. Un jeton à granularité fine ne couvre qu'un seul propriétaire de ressources, et la doc liste comme non pris en charge la contribution à « des dépôts où l'utilisateur est un outside collaborator ou un repository collaborator ». Un compte B simple collaborateur (Write) sur un dépôt personnel de A ne peut donc pas obtenir un jeton à granularité fine capable d'écrire sur ce dépôt. La doc ne dit pas explicitement si A apparaît dans la liste « Resource owner » de B ; le comportement d'interface n'a pas été testé.
+
+**Limites exactes (page « Managing your personal access tokens », extraits).**
+- Liste des limites : « Fine-grained personal access tokens do not support every feature of personal access tokens (classic). » Puis, notamment : « Using fine-grained personal access token to contribute to public repos where the user is not a member. » ; « Using fine-grained personal access token to contribute to repositories where the user is an outside or repository collaborator. » ; « Using fine-grained personal access token to access multiple organizations at once. » ; Packages ; Checks API ; Projects de compte utilisateur.
+- Propriétaire : « Each token is limited to access resources owned by a single user or organization. » et « Under Resource owner, select a resource owner. The token will only be able to access resources owned by the selected resource owner. »
+- Collaborateurs externes (page « Permissions required for fine-grained personal access tokens », extrait) : « Outside collaborators can only use personal access tokens (classic) to access organization repositories that they are a collaborator on. » Cette phrase vise les dépôts d'organisation ; la limite générale ci-dessus couvre les dépôts personnels.
+- Approbation d'organisation (non applicable à un dépôt de compte personnel) : un jeton reste « pending » tant qu'un administrateur ne l'a pas validé et ne peut lire que les ressources publiques.
+
+**Évolution récente.**
+- Changelog officiel du 2025-03-18, « Fine-grained PATs are now generally available » : la liste des lacunes restantes inclut « Contributing to repositories where you're an outside collaborator or an unaffiliated open source contributor ». Date vérifiée (lue directement).
+- La doc lue le 2026-11-07 contient toujours la même limite.
+- Aucune entrée de changelog 2025-2026 annonçant sa levée n'a été trouvée. Une recherche a remonté une doc Enterprise Server 3.15 (date non vue) qui citait aussi la limite ; une autre recherche a affirmé à tort que la liste actuelle ne la contenait plus. Cette contradiction est levée en faveur de la limite, car la page elle-même a été lue le 2026-11-07.
+
+**Niveau de confiance.** Élevé que la limite existe à la date de consultation (doc officielle lue, plus changelog de 2025-03-18). Élevé que la doc ne prévoit pas d'exception pour les dépôts personnels. Faible sur l'absence de changement non publié ou non détecté entre 2025-03 et 2026-11. Le point « A dans la liste Resource owner de B » reste non testé. La note « confiance moyenne » de la section 4 peut être relevée à élevé pour la limite elle-même.
+
+### Question 2 : alternatives si le jeton fin n'est pas possible
+
+**(a) Jeton classique, portée `repo`.**
+- Doc « Scopes for OAuth apps » (pas de date) : `repo` « Grants full access to public and private repositories ». `workflow` « Grants the ability to add and update GitHub Actions workflow files. » Une exception existe : un fichier de workflow identique (même chemin, même contenu) déjà présent sur une autre branche du même dépôt peut être committé sans cette portée.
+- Ce que `repo` donne concrètement à B : l'accès à **tous** les dépôts auxquels B a accès, pas seulement celui de A. Le rôle de B sur le dépôt de A (Write) borne ce qu'il peut faire. La portée est un plafond, pas un filtre par dépôt.
+- Fusion : un collaborateur Write peut « Create, merge, and close pull requests in the repository » (page [Permission levels for a personal account repository](https://docs.github.com/en/account-and-profile/reference/permission-levels-for-a-personal-account-repository), pas de date). Donc `repo` suffit à fusionner une PR dont les règles sont satisfaites.
+- Modifier des workflows sans `workflow` : refusé par le push (sauf l'exception ci-dessus). Un compte qui ne fait que pousser sans `workflow` ne peut donc pas modifier `.github/workflows/` (doc de la portée ; non testé).
+- Administrer (rulesets, paramètres) : la doc des rôles d'organisation réserve « Manage branch protection rules and repository rulesets » au rôle Admin ; la page des rôles de compte personnel ne le dit pas explicitement. Inférence : un Write ne gère pas les rulesets, la portée `repo` seule n'y change rien. Non vérifié.
+- Confiance : élevé pour la portée `repo` et `workflow` (doc officielle). Moyen pour l'effet « plafond, pas filtre » (déduit de la doc des portées et des rôles). Faible pour la gestion des rulesets par un Write sur compte personnel.
+
+**(b) GitHub App installée sur le seul dépôt.**
+- Choix du périmètre : « the user or organization owner who installed the app can decide what repositories the app can access » (page [Deciding when to build a GitHub App](https://docs.github.com/en/apps/creating-github-apps/about-creating-github-apps/deciding-when-to-build-a-github-app), pas de date). A installe l'app sur son compte et ne sélectionne que son dépôt. Un jeton d'installation peut être restreint à ce dépôt via les paramètres `repositories` ou `repository_ids` (page [Authenticating as a GitHub App installation](https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/authenticating-as-a-github-app-installation), pas de date).
+- Durée : « The installation access token will expire after 1 hour. »
+- Identité : « API requests made by an app installation are attributed to the app. » Les PR créées sont donc attribuées au bot, pas à un compte humain.
+- Permissions (page [Permissions required for GitHub Apps](https://docs.github.com/en/rest/authentication/permissions-required-for-github-apps), pas de version affichée) : `PUT .../pulls/{pull_number}/merge` relève de « Repository permissions for Contents » en écriture ; `POST .../pulls` relève de « Pull requests » en écriture ; les rulesets en écriture relèvent de « Administration ». Donc, pour pousser, ouvrir une PR et fusionner, l'app a besoin de Contents: write et Pull requests: write. Les permissions pour gérer les rulesets (Administration: write) ne sont pas nécessaires au flux PR.
+- Contournement du ruleset : une app est un acteur `Integration` (doc REST rulesets, version 2026-03-10). Elle ne contourne les règles que si elle figure dans `bypass_actors`. Sans entrée, le ruleset s'applique. Avec `bypass_mode = "pull_request"`, le contournement ne vaut que pour les règles sur les PR ; avec `exempt`, les règles ne sont plus exécutées pour cet acteur et aucune entrée d'audit n'est créée. Les paramètres de bypass sont donc à choisir explicitement ; le choix n'est pas fait ici.
+- `required_approving_review_count` : une approbation venant d'une autre personne reste exigée, qu'il y ait une app ou non. La doc interdit seulement à l'auteur d'approuver sa propre PR ; le propriétaire A, qui approuve une PR ouverte par le bot, est une autre personne. Inférence : le nombre d'approbations requis n'a pas à changer. Non vérifié sur un dépôt réel : la doc ne dit pas explicitement qu'une PR créée par une app est traitée comme une PR de compte humain pour les approbations.
+- Limites : une app tierce ou créée par A demande la création de l'app (non détaillée ici). Les jetons d'installation expirent après 1 heure, donc un script doit les renouveler. La doc « Deciding when » recommande l'app plutôt qu'un PAT pour les intégrations de longue durée, et les PAT pour les tests et scripts courts.
+- Confiance : élevé pour l'installation par dépôt, l'expiration d'une heure, l'attribution au bot et les rubriques de permission. Moyen pour l'absence de contournement sans entrée de bypass (déduit de la doc des rulesets). Moyen pour l'effet sur `required_approving_review_count` (inférence). Faible sur l'effet exact des valeurs `bypass_mode` appliquées à une app (non testé).
+
+**(c) Clé de déploiement SSH.**
+- Doc « Managing deploy keys » (pas de date) : « Deploy keys only grant access to a single repository. » ; « Deploy keys are read-only by default, but you can give them write access when adding them to a repository. » ; « A deploy key with write access lets a deployment push to the repository. » ; « Deploy keys with write access can perform the same actions as an organization member with admin access. » ; « Deploy keys are credentials that don't have an expiry date. »
+- Limite pour E10b : la doc ne dit pas qu'une clé de déploiement peut ouvrir une PR ou appeler l'API. Inférence forte : une clé SSH sert au transport Git, pas à l'API REST. Donc pas de PR, pas de fusion via API, à moins d'un autre jeton.
+- Point de vigilance : la clé de déploiement avec écriture est décrite comme pouvant faire autant qu'un membre admin, et elle n'expire pas. Pour un dépôt personnel, la phrase « admin » ne se transpose pas forcément ; à lire comme un avertissement.
+- Bypass : `DeployKey` existe comme `actor_type`, mais `bypass_mode = "pull_request"` ne s'applique pas aux clés de déploiement (doc REST rulesets).
+- Confiance : élevé pour les permissions et l'absence d'expiration (doc lue). Moyen pour « pas de PR » (inférence sur ce que la doc ne dit pas).
+
+**(d) Organisation gratuite.**
+- Si le dépôt appartient à une organisation, la limite « outside collaborator » ne s'applique plus au compte machine s'il en est **membre** avec un rôle Write (la limite vise les collaborateurs externes ; un membre n'en est pas un). Inférence à partir de la définition de la doc ; non testé.
+- Rôles d'organisation (page [Repository roles for an organization](https://docs.github.com/en/organizations/managing-user-access-to-your-organizations-repositories/managing-repository-roles/repository-roles-for-an-organization), pas de date) : Write peut fusionner une PR ; « Manage branch protection rules and repository rulesets » est réservé à Admin.
+- Fine-grained tokens pour une org : le propriétaire peut exiger une approbation, et le jeton reste « pending » jusqu'à validation.
+- Rulesets : `actor_type = OrganizationAdmin` n'est pas applicable aux dépôts personnels (doc REST rulesets) ; il existe donc seulement pour une organisation.
+- Non vérifié : les conditions de plan (gratuit ou non) pour les rulesets sur dépôt privé ou public. Le dépôt est public, donc a priori sans obstacle, mais la doc de tarification n'a pas été lue.
+- Confiance : élevé pour les rôles et la limite « outside collaborator ». Moyen pour l'effet « membre et non collaborateur externe ». Faible pour les plans.
+
+### Question 3 : une PR approuvée par A peut-elle être fusionnée par un compte Write ? Peut-on l'en empêcher autrement que par le ruleset ?
+
+**Réponse courte.** Oui : un compte Write peut fusionner une PR, et une approbation de A satisfait `required_approving_review_count`. La doc ne fournit pas de réglage qui retire à un Write seul la permission de fusion tout en lui laissant le push : fusion et écriture vont ensemble. Le levier documenté est le ruleset (approbations, dernier push approuvé par un autre, liste de bypass).
+
+**Détails.**
+- Fusion par Write : « Create, merge, and close pull requests in the repository » (page permission levels pour compte personnel, pas de date). Rôles d'organisation : « Merge a pull request » autorisé pour Write, Maintain et Admin, pas pour Read ni Triage (page organisation).
+- Approbation de A : rien dans les pages lues n'empêche un Write de fusionner une PR approuvée par un autre. Donc si le ruleset est satisfait, le compte machine peut fusionner.
+- Pour que la fusion par le bot soit conditionnée à une relecture : `require_last_push_approval` (doc REST rulesets, 2026-03-10) : « Whether the most recent reviewable push must be approved by someone other than the person who pushed it. » Si le bot pousse un commit après l'approbation de A, A doit réapprouver. `dismiss_stale_reviews_on_push` complète le dispositif (attributs Terraform vus le 2026-11-07, voir section 4).
+- Empêcher la fusion autrement : la permission « Contents: write » est exigée pour `PUT .../merge` (table des permissions d'app et de jeton fin). Une app qui peut pousser peut donc fusionner. Il n'a pas été trouvé de permission séparée « merge » qu'on pourrait ne pas accorder. Les seuls leviers documentés sont : ne pas mettre le compte dans `bypass_actors`, exiger des approbations, exiger que le dernier push soit approuvé, et exiger une PR (pas de push direct sur la branche protégée).
+- Piège : l'approbation ne prouve que la relecture humaine ; si le bot est dans `bypass_actors` avec `bypass_mode = "pull_request"` ou `exempt`, l'approbation n'est plus exigée pour ce bot (doc REST rulesets). Une source secondaire évoque un comportement différent entre les modes `evaluate` et `active` ; non confirmé.
+
+**Niveau de confiance.** Élevé pour : le Write peut fusionner (doc officielle, deux pages), `require_last_push_approval` (doc REST), `bypass_mode` (doc REST), la permission Contents pour la fusion (table officielle). Moyen pour l'absence de réglage de fusion séparé (absence trouvée dans les pages lues, pas exhaustive). Faible pour le comportement de `evaluate` contre `active` (source secondaire).
+
+### Sources de la section 5
+
+- [Managing your personal access tokens (GitHub Docs)](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens), lu le 2026-11-07, pas de date affichée.
+- [Permissions required for fine-grained personal access tokens (GitHub Docs)](https://docs.github.com/en/rest/authentication/permissions-required-for-fine-grained-personal-access-tokens), lu le 2026-11-07, pas de date affichée.
+- [Permissions required for GitHub Apps (GitHub Docs)](https://docs.github.com/en/rest/authentication/permissions-required-for-github-apps), lu le 2026-11-07, pas de version affichée.
+- [Fine-grained PATs are now generally available (GitHub Changelog)](https://github.blog/changelog/2025-03-18-fine-grained-pats-are-now-generally-available/), 2025-03-18.
+- [Scopes for OAuth apps (GitHub Docs)](https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/scopes-for-oauth-apps), lu le 2026-11-07, pas de date affichée.
+- [Deciding when to build a GitHub App (GitHub Docs)](https://docs.github.com/en/apps/creating-github-apps/about-creating-github-apps/deciding-when-to-build-a-github-app), lu le 2026-11-07, pas de date affichée.
+- [Authenticating as a GitHub App installation (GitHub Docs)](https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/authenticating-as-a-github-app-installation), lu le 2026-11-07, pas de date affichée.
+- [Managing deploy keys (GitHub Docs)](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/managing-deploy-keys), lu le 2026-11-07, pas de date affichée.
+- [Approving a pull request with required reviews (GitHub Docs)](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/reviewing-changes-in-pull-requests/approving-a-pull-request-with-required-reviews), lu le 2026-11-07, pas de date affichée.
+- [About rulesets (GitHub Docs)](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/about-rulesets), lu le 2026-11-07, pas de date affichée.
+- [REST API : repository rules (GitHub Docs)](https://docs.github.com/en/rest/repos/rules), version d'API 2026-03-10.
+- [Repository roles for an organization (GitHub Docs)](https://docs.github.com/en/organizations/managing-user-access-to-your-organizations-repositories/managing-repository-roles/repository-roles-for-an-organization), lu le 2026-11-07, pas de date affichée.
+- [Permission levels for a personal account repository (GitHub Docs)](https://docs.github.com/en/account-and-profile/reference/permission-levels-for-a-personal-account-repository), lu le 2026-11-07, pas de date affichée.
+- Secondaire, non retenue comme base : résultats de recherche renvoyant des pages Enterprise Server 3.12, 3.13 et 3.15 (versions anciennes ou de dates non vues), utilisées seulement pour signaler la limite « outside collaborator » déjà présente dans la doc GitHub.com.
+
+### Incertitudes restantes (section 5)
+
+1. Comportement réel de l'interface pour B : A apparaît-il dans « Resource owner » ? À tester avec un compte test.
+2. Effet exact de `repo` sur un compte Write sans `workflow` : la doc des sous-portées de `repo` n'a pas été lue en détail.
+3. Gestion des rulesets par un Write sur compte personnel : non dite explicitement dans la page lue.
+4. Approbation d'une PR créée par une GitHub App : comptée comme une PR humaine ? Non vérifié.
+5. Effet de `bypass_mode` sur une app et sur un administrateur de compte personnel : non testé ; la doc ne dit pas si le propriétaire du dépôt est contourné par défaut.
+6. Conditions de plan pour les rulesets et les apps sur compte gratuit : non lues.
+7. Absence de changement entre 2025-03 et 2026-11 : pas de changelog 2025-2026 trouvé sur le sujet ; la doc lue le 2026-11-07 reste la référence.
+</content>

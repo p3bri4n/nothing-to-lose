@@ -3,6 +3,12 @@
 
 github_owner = "p3bri4n"
 
+# Compte machine des agents (décision 0021) : identifiant GitHub d'un compte distinct du propriétaire.
+# Vide = aucun compte invité. Le compte reçoit le rôle Write (jamais administrateur).
+# Voir docs/technique/compte-machine-agents.md avant de le renseigner.
+# agents_account = "mon-compte-machine"
+agents_account = ""
+
 # Interrupteurs des workflows
 gpu_eval_enabled = false # true au jalon P2, une fois le runner GPU enregistré
 deploy_enabled   = false # true au jalon du replay public

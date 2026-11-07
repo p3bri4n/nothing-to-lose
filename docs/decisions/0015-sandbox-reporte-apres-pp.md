@@ -14,6 +14,7 @@
   - son montage `-v "$PROJECT_DIR":/workspace` et son nom de conteneur `--name claudeus-<dossier>` échouaient probablement avec l'ancien chemin du dépôt (« Guide Or Fade : Your command », avec espaces et « : »). Le dossier s'appelle désormais `nothing-to-lose` (renommé le 2026-11-07) : ce point ne devrait plus se produire, à revérifier ;
   - sa liste blanche réseau ne contient pas les domaines de téléchargement de mise ;
   - il tourne par défaut avec `--dangerously-skip-permissions`.
+- **Précisions ultérieures** : [0026](0026-isolement-identifiants-claudeus.md) (2026-11-07) : Claudeus, adapté, devient le prérequis d'une barrière réelle contre les agents (isolement des identifiants du propriétaire) ; sa date reste à fixer par l'utilisateur. Le report décidé ici n'est pas modifié.
 - **Conséquences** :
   - le jalon PP ne comprend plus d'image du sandbox ; le critère de cohérence des versions porte sur le local et la CI ;
   - les points ci-dessus sont à traiter avant d'utiliser Claudeus pour le développement du projet.

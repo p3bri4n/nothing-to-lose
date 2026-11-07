@@ -13,6 +13,7 @@
   - l'utilisateur fusionne comme administrateur, par le contournement `bypass_mode = "pull_request"` ;
   - le jeton U5 est remplacé par un jeton à granularité fine **du compte machine** (*Contents*, *Pull requests* et *Issues* en écriture), jamais rattaché au compte propriétaire.
 - **Conséquences** :
+  - **Précisé par [0024](0024-jeton-compte-machine-classique.md)** : le jeton du compte machine est un **jeton classique à portée `repo`** (`workflow` seulement si les agents modifient `.github/workflows/`), de durée courte, et non le jeton à granularité fine prévu ci-dessus : la limite GitHub sur les dépôts personnels l'interdit (recherche du 2026-11-07, section 5). Le reste de la présente décision est inchangé ;
   - étape **E10b**, dans une PR séparée d'E10 : Terraform (ruleset à 1 approbation ; variable `agents_account` ; ajout du compte machine comme collaborateur avec le rôle *Write*) ;
   - actions de l'utilisateur : créer le compte machine, accepter l'invitation, créer le jeton, lancer `just tf-apply` (réservé à l'utilisateur) ;
   - **jusqu'à E10b, la fusion n'est protégée que par le hook `guard_bash.py` et par la discipline des agents** ; les agents s'arrêtent à la pull request ouverte ;

@@ -12,6 +12,7 @@
 | Q33 | Durée et bruit d'un essai de porte sur un bâtiment inconnu | Quelques secondes ; forcer = bruyant, discret = plus long | [19](19-quartiers-batiments.md) |
 | Q31 | Antenne et armoire de piratage au même endroit, ou séparées ? | Séparées : deux objectifs distincts par quartier | [19](19-quartiers-batiments.md) |
 | — | Capacités réelles de la machine (CPU, débit LLM en parallèle, latence de Laya) | Trois benchmarks à écrire | [03](03-architecture-technique.md) |
+| — | Date de l'adaptation de Claudeus (sandbox), prérequis de l'isolement des identifiants du propriétaire et d'une barrière réelle contre les agents (décision [0026](../decisions/0026-isolement-identifiants-claudeus.md)) | À fixer par l'utilisateur, avant tout usage des agents sans surveillance ; un jalon doit la porter | [16](16-jalons.md), [0015](../decisions/0015-sandbox-reporte-apres-pp.md) |
 
 ## Journal des décisions (revue du 5 novembre 2026)
 
@@ -58,3 +59,7 @@
 | — | Fusion des pull requests (revue d'architecte d'E10) | Compte machine pour les agents (rôle Write, pas administrateur), 1 approbation requise, fusion par l'utilisateur seul en administrateur ; étape E10b séparée d'E10 — décision [0021](../decisions/0021-fusion-compte-machine-agents.md), qui précise [0013](../decisions/0013-identite-agents-fusion.md) |
 | — | Panne du garde-fou Bash | Refus limité aux commandes `git` et `gh` en cas d'erreur, nombre d'erreurs de `guard.log` affiché à l'ouverture de session (à coder) — décision [0022](../decisions/0022-panne-garde-bash.md) |
 | — | Périmètre du garde-fou Bash | Règles ajoutées au-delà du plan conservées ; garde sur Edit et Write pour `.git/`, `.githooks/`, `.claude/settings.json` reporté à la refonte des agents — décision [0023](../decisions/0023-perimetre-garde-bash.md) |
+| — | Barrière serveur (revue d'architecte d'E10b, 7 novembre 2026) | CODEOWNERS et `require_code_owner_review` : seule l'approbation du propriétaire compte ; le propriétaire fusionne par contournement administrateur ; règle `update` reportée (option future) — décision [0025](../decisions/0025-barriere-serveur-codeowners.md), qui précise [0021](../decisions/0021-fusion-compte-machine-agents.md) |
+| — | Isolement des identifiants du propriétaire | Cible : agents seulement dans Claudeus (conteneur sans identifiants du propriétaire, `GH_TOKEN` du compte machine injecté) ; mesures intérimaires sur l'hôte ; précise [0015](../decisions/0015-sandbox-reporte-apres-pp.md) — décision [0026](../decisions/0026-isolement-identifiants-claudeus.md) |
+| — | Portée `workflow` du jeton des agents | Jamais : l'agent prépare le changement de workflow, l'utilisateur le pousse — décision [0027](../decisions/0027-portee-workflow-jamais.md), qui précise [0024](../decisions/0024-jeton-compte-machine-classique.md) |
+| — | Garde Bash et identifiants GitHub | Étendu : refus de `gh auth token`, `gh auth login`…, de `gh auth status --show-token` et des affectations ou retraits de `GH_TOKEN`, `GITHUB_TOKEN` et variantes Enterprise ; palliatif partiel — décision [0028](../decisions/0028-garde-bash-identifiants-github.md), qui étend [0023](../decisions/0023-perimetre-garde-bash.md) |
