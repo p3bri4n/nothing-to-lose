@@ -38,6 +38,14 @@ inspect *ARGS:
 eval *ARGS:
     @echo "à venir (P2) ({{ARGS}})" && exit 1
 
+# PP — vérifier que les outils installés correspondent à mise.toml (--ci si CI=true)
+versions:
+    python tools/check_tool_versions.py {{ if env_var_or_default("CI", "") == "true" { "--ci" } else { "" } }}
+
+# PP — tests des outils du dépôt (tools/tests)
+tools-test:
+    python -m unittest discover -s tools/tests
+
 # --- Infrastructure GitHub (Terraform) ---
 # État local hors dépôt (décision 0002). Le jeton GitHub vient de GITHUB_TOKEN.
 tf_state := env_var_or_default("TF_STATE_PATH", env_var("HOME") + "/.local/share/terraform/nothing-to-lose/terraform.tfstate")
