@@ -1,8 +1,8 @@
 # Modèles GitHub et contrôle de la liste de contrôle
 
-*Mise à jour : 2026-11-07 (étape E8 du jalon PP)*
+*Mise à jour : 2026-11-07 (étapes E8 et E9 du jalon PP : le contrôle est branché dans `ci.yml`)*
 
-Décrit le code **tel qu'il existe** : modèle de pull request, formulaires de tickets, script `tools/check_pr_checklist.py` et ses tests, recette `just actionlint`. Le plan est dans [`docs/plans/PP.md`](../plans/PP.md) (étape E8, risque R10, critère C3).
+Décrit le code **tel qu'il existe** : modèle de pull request, formulaires de tickets, script `tools/check_pr_checklist.py` et ses tests, recette `just actionlint`. Le plan est dans [`docs/plans/PP.md`](../plans/PP.md) (étapes E8 et E9, risque R10, critère C3).
 
 ## État
 
@@ -11,7 +11,7 @@ Décrit le code **tel qu'il existe** : modèle de pull request, formulaires de t
 | Modèle de pull request (`.github/pull_request_template.md`) et formulaires de tickets (`.github/ISSUE_TEMPLATE/`) | écrits dans la même étape E8 ; voir le dépôt pour leur contenu exact |
 | `tools/check_pr_checklist.py` et ses tests | disponibles (`just tools-test`) |
 | Recette `just actionlint`, ajoutée à `just lint` | disponible |
-| **Branchement dans `ci.yml`** | **pas encore fait** : prévu en E9. Aujourd'hui, aucun workflow n'exécute le contrôle de la liste. |
+| **Branchement dans `ci.yml`** | **fait (E9)** : étape « Liste de contrôle de la pull request » du job `ci-cpu`, bloquante (voir ci-dessous) |
 
 ## Contrat du modèle de pull request
 
@@ -34,10 +34,11 @@ Bibliothèque standard uniquement. La logique est pure (`check_body`, `check_pul
 | `PR_BODY` | Corps de la pull request. Absente ou vide : traitée comme un corps vide (donc section absente, code 1). |
 | `PR_AUTHOR` | Login de l'auteur de la PR. `dependabot[bot]` (comparaison exacte) est **exempté** : message, code 0. |
 
-Le corps n'est **jamais** passé en argument ni interpolé dans un `run:` (injection, risque R10). En CI il devra être transmis par `env:` :
+Le corps n'est **jamais** passé en argument ni interpolé dans un `run:` (injection, risque R10). En CI il est transmis par `env:` (étape de `.github/workflows/ci.yml`) :
 
 ```yaml
-- name: Liste de contrôle
+- name: Liste de contrôle de la pull request
+  if: ${{ !cancelled() && github.event_name == 'pull_request' }}
   env:
     PR_BODY: ${{ github.event.pull_request.body }}
     PR_AUTHOR: ${{ github.event.pull_request.user.login }}
@@ -50,6 +51,14 @@ Essai local :
 PR_BODY="$(cat .github/pull_request_template.md)" python3 tools/check_pr_checklist.py   # code 1
 PR_BODY="$(sed 's/- \[ \]/- [x]/' .github/pull_request_template.md)" python3 tools/check_pr_checklist.py   # code 0
 ```
+
+### Branchement dans la CI
+
+- L'étape n'existe que dans `ci.yml`, job `ci-cpu` ; elle ne s'exécute que pour `github.event_name == 'pull_request'` (jamais sur un push vers `main`). `!cancelled()` la fait tourner même après l'échec d'une étape précédente.
+- Le workflow se déclenche sur `pull_request` avec les types `opened`, `edited`, `synchronize` et `reopened` : modifier la description d'une PR relance `ci-cpu`, qui relit le corps à jour. Cocher une case suffit donc à faire passer le check. Pour relancer le contrôle, **modifier la description de la PR** (cocher la case) : « Re-run jobs » rejoue le job avec l'ancien corps de la PR et échouerait de nouveau.
+- Le contrôle est **bloquant** : `ci-cpu` est le check obligatoire du ruleset de `main`. Une case décochée fait échouer le job avec « Liste de contrôle incomplète » et la liste des cases concernées.
+- Le corps ne passe **jamais** par une expression `${{ }}` dans un `run:` (R10). Le script est lancé par le `python3` de mise.
+- Contre-épreuve de C3 à faire sur une vraie PR (décocher une case, vérifier l'échec, la recocher) : non vérifiable en local.
 
 ### Comportement
 
@@ -78,7 +87,7 @@ Lancés par `just tools-test`. Classes : `CheckBodyTests` (section absente, vide
 actionlint -config-file .github/actionlint.yaml
 ```
 
-Vérifie tous les workflows de `.github/workflows/`. La recette est dans `just lint` (après `secrets-scan`, avant `tf-check`) et appelle `actionlint` du `PATH` (donc `mise exec -- just lint` si mise n'est pas activé dans le shell). [`.github/actionlint.yaml`](../../.github/actionlint.yaml) déclare le label de runner auto-hébergé `gpu` ; sans cette configuration, `gpu-eval.yml` produit l'alerte `label "gpu" is unknown` (vérifié le 2026-11-07). Les workflows actuels passent.
+Vérifie tous les workflows de `.github/workflows/`. La recette est dans `just lint` (après `secrets-scan`, avant `tf-check`) et appelle `actionlint` du `PATH` (donc `mise exec -- just lint` si mise n'est pas activé dans le shell). [`.github/actionlint.yaml`](../../.github/actionlint.yaml) déclare le label de runner auto-hébergé `gpu` ; sans cette configuration, `gpu-eval.yml` produit l'alerte `label "gpu" is unknown` (vérifié le 2026-11-07). Les workflows actuels passent (y compris après l'épinglage par SHA de l'étape E9). La CI l'exécute aussi (étape « Workflows (actionlint) » de `ci-cpu`).
 
 ## Liens
 

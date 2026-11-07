@@ -33,12 +33,18 @@ jobs:
     runs-on: [self-hosted, linux, gpu]
     timeout-minutes: 120
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: Évaluation
-        run: just eval --seeds ${{ inputs.seeds || '20' }}
+        env:
+          SEEDS: ${{ inputs.seeds || '20' }}
+        run: |
+          [[ "$SEEDS" =~ ^[0-9]+$ ]] || { echo "seeds invalide" >&2; exit 1; }
+          just eval --seeds "$SEEDS"
       - name: Rapport
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: eval-report
           path: |

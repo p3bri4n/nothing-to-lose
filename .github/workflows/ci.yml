@@ -1,10 +1,22 @@
 # CI sans GPU : tourne sur les runners hébergés par GitHub, y compris pour les pull requests.
-# Le job « ci-cpu » est le check obligatoire de la branche principale (voir infra/terraform/ruleset.tf).
-# Chaque étape ne s'exécute que si la partie du projet correspondante existe déjà.
+# Le job « ci-cpu » est le check obligatoire de la branche principale (voir infra/terraform/ruleset.tf) :
+# ne pas le renommer sans mettre à jour `required_ci_check` dans Terraform, dans le même changement.
+#
+# Les outils viennent de mise (mise.toml, rust-toolchain.toml) : ce sont exactement les versions
+# utilisées en local, et l'étape « just versions » le vérifie. Voir docs/technique/ci-cd.md.
+#
+# Le contrôle de la liste de contrôle de la pull request (tools/check_pr_checklist.py) est BLOQUANT :
+# une PR dont une case « Liste de contrôle » n'est pas cochée fait échouer ce job. Il est relancé
+# quand la description de la PR est modifiée (déclencheur `edited`). Le corps de la PR passe par
+# `env:`, jamais par une expression dans `run:` (injection de script, dépôt public).
+#
+# Toutes les actions sont épinglées par SHA de commit (version en commentaire).
+# Chaque étape propre à un langage ne s'exécute que si la partie du projet correspondante existe déjà.
 name: ci
 
 on:
   pull_request:
+    types: [opened, edited, synchronize, reopened]
   push:
     branches: [main]
 
@@ -13,28 +25,51 @@ permissions:
 
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   ci-cpu:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Liens internes de la documentation
-        run: python3 tools/check_links.py
-
-      # --- Rust (à partir de P1) ---
-      - name: Toolchain Rust
-        if: hashFiles('Cargo.toml') != ''
-        uses: dtolnay/rust-toolchain@stable
+      # fetch-depth: 0 : gitleaks parcourt tout l'historique Git (just secrets-scan), en local.
+      # persist-credentials: false : le jeton n'est pas laissé dans .git/config (aucune étape ne pousse).
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          components: rustfmt, clippy
-          targets: wasm32-unknown-unknown
+          fetch-depth: 0
+          persist-credentials: false
+
+      # Installe mise puis tous les outils de mise.toml. Le jeton évite les limites de débit de l'API
+      # GitHub pendant les téléchargements. `version` fige mise lui-même (il n'est pas dans mise.toml).
+      - name: Outils (mise)
+        uses: jdx/mise-action@82a612c5ab8bcda7cc5db6b7e81a8e7584c3dc6e # v5.2.3
+        with:
+          version: 2026.11.0
+          cache: true
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Versions des outils
+        run: just versions
+      - name: Secrets (gitleaks, tout l'historique)
+        run: just secrets-scan
+      - name: Liens internes de la documentation
+        run: just docs-links
+      - name: Formatage
+        run: just fmt-check
+      - name: Workflows (actionlint)
+        run: just actionlint
+      # Sans backend, sans état et sans jeton : validate n'en a pas besoin.
+      - name: Terraform (init sans backend)
+        run: terraform -chdir=infra/terraform init -backend=false -input=false -lockfile=readonly
+      - name: Terraform (format et validation)
+        run: just tf-check
+      - name: Tests des outils du dépôt
+        run: just tools-test
+
+      # --- Rust (à partir de P1) : toolchain de mise et de rust-toolchain.toml ---
       - name: Cache Rust
         if: hashFiles('Cargo.toml') != ''
-        uses: Swatinem/rust-cache@v2
+        uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
       - name: Formatage Rust
         if: hashFiles('Cargo.toml') != ''
         run: cargo fmt --all -- --check
@@ -48,24 +83,14 @@ jobs:
         if: hashFiles('crates/wasm/Cargo.toml') != ''
         run: cargo build -p wasm --target wasm32-unknown-unknown --release
 
-      # --- Python (à partir de P0 pour bake/, P2 pour services/brain) ---
-      - name: uv
-        if: hashFiles('pyproject.toml') != ''
-        uses: astral-sh/setup-uv@v5
+      # --- Python (à partir de P0 pour bake/, P2 pour services/brain) : uv et Python de mise ---
       - name: Lint et tests Python
         if: hashFiles('pyproject.toml') != ''
         run: |
           uv run ruff check .
           uv run pytest -q
 
-      # --- Viewer web (à partir de P0) ---
-      - name: Node
-        if: hashFiles('web/viewer/package.json') != ''
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-          cache-dependency-path: web/viewer/package-lock.json
+      # --- Viewer web (à partir de P0) : Node de mise ---
       - name: Build du viewer
         if: hashFiles('web/viewer/package.json') != ''
         working-directory: web/viewer
@@ -74,9 +99,18 @@ jobs:
           npm run build
 
       # --- Contrôles de la simulation sans IA (à partir de P1) ---
-      - name: just
-        if: hashFiles('Cargo.toml') != ''
-        uses: extractions/setup-just@v2
       - name: just check (invariants, non-régression, mini-partie)
         if: hashFiles('Cargo.toml') != ''
         run: just check
+
+      # Contrôle bloquant de la liste de contrôle des PR, volontairement en DERNIÈRE étape du job :
+      # `!cancelled()` le fait s'exécuter même si une étape précédente a échoué, pour que l'auteur voie
+      # tous les problèmes en une fois. Il ne tourne que pour les pull requests (jamais sur un push
+      # vers main). Il doit rester la dernière étape : une étape ajoutée après lui serait ignorée
+      # si ce contrôle échoue.
+      - name: Liste de contrôle de la pull request
+        if: ${{ !cancelled() && github.event_name == 'pull_request' }}
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+        run: python3 tools/check_pr_checklist.py
