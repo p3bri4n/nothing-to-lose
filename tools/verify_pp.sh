@@ -12,6 +12,10 @@ Subcommands:
   versions   Check installed tool versions against mise.toml
   format     Check the PostToolUse formatting hook (C2, automatic part)
   secrets    Check the Git pre-commit hook and gitleaks in a temporary repository (C1)
+  merge-barrier [--agents-account NAME] [--repo OWNER/REPO]
+             Read-only check of the server-side merge barrier (E10b, decision 0021):
+             the ruleset requires an approval and the owner bypasses by pull request only;
+             NAME (or AGENTS_ACCOUNT) has the write role. Run by the user; needs gh and a token.
 USAGE
 }
 
@@ -334,6 +338,12 @@ cmd_secrets() {
   return "$status"
 }
 
+# E10b: read-only check of the merge barrier through the GitHub API (GET requests only).
+# Never merges, approves or writes anything. Exit codes: see tools/check_merge_barrier.py.
+cmd_merge_barrier() {
+  python3 "$root/tools/check_merge_barrier.py" "$@"
+}
+
 if [[ $# -lt 1 ]]; then
   usage
   exit 2
@@ -345,6 +355,7 @@ case "$sub" in
   versions) cmd_versions "$@" ;;
   format) cmd_format "$@" ;;
   secrets) cmd_secrets "$@" ;;
+  merge-barrier) cmd_merge_barrier "$@" ;;
   *)
     echo "verify_pp.sh: unknown subcommand '$sub'" >&2
     usage

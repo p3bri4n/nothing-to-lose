@@ -1,0 +1,13 @@
+# Propriétaires du code (décision 0021, étape E10b).
+#
+# Rôle : avec `require_code_owner_review = true` dans le ruleset de la branche principale
+# (infra/terraform/ruleset.tf), une pull request ne se fusionne que si un propriétaire listé
+# ici l'a approuvée. Les approbations du compte machine des agents (rôle Write) ne comptent donc
+# pas : seul le propriétaire du dépôt débloque la fusion. Ses propres pull requests passent par le
+# contournement `pull_request` du rôle admin (il ne peut pas approuver la sienne).
+#
+# Ce fichier doit rester valide : une ligne qui ne désigne aucun propriétaire valide rend la
+# règle sans effet. Le propriétaire ci-dessous doit rester égal à `github_owner` (contrôlé par
+# tools/tests/test_codeowners.py).
+
+* @p3bri4n

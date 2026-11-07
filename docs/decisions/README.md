@@ -20,9 +20,9 @@ Les décisions antérieures à la création du dépôt sont dans le journal des 
 | [0010](0010-liste-controle-pr.md) | 2026-11-05 | Liste de contrôle des pull requests vérifiée et bloquante | décidée |
 | [0011](0011-politique-versions-exactes.md) | 2026-11-05 | Politique de versions : versions exactes partout | décidée |
 | [0012](0012-markdown-hors-formatage.md) | 2026-11-05 | Markdown exclu du formatage automatique | décidée |
-| [0013](0013-identite-agents-fusion.md) | 2026-11-05 | Identité GitHub des agents et fusion réservée à l'utilisateur | décidée |
+| [0013](0013-identite-agents-fusion.md) | 2026-11-05 | Identité GitHub des agents et fusion réservée à l'utilisateur ; précisée par 0021, 0024, 0026, 0028 | décidée |
 | [0014](0014-sequencement-pp.md) | 2026-11-05 | Séquencement de PP : Terraform, puis premier push, puis une PR par étape | décidée |
-| [0015](0015-sandbox-reporte-apres-pp.md) | 2026-11-05 | Sandbox reporté après PP (Claudeus de l'utilisateur) | décidée |
+| [0015](0015-sandbox-reporte-apres-pp.md) | 2026-11-05 | Sandbox reporté après PP (Claudeus de l'utilisateur) ; précisé par 0026 | décidée |
 | [0016](0016-nom-nothing-to-lose.md) | 2026-11-05 | Nom du projet : « Nothing To Lose », Toulouse seulement (remplace 0005) | décidée |
 | [0017](0017-accroche-le-speech.md) | 2026-11-05 | Accroche : le speech officiel, signature « commandez avec brio ! » (remplace 0006) | décidée |
 | [0018](0018-image-principale-key-art.md) | 2026-11-05 | Image principale du jeu : `docs/assets/key-art.png` (style réaliste non décidé comme direction artistique) | décidée |
@@ -31,6 +31,11 @@ Les décisions antérieures à la création du dépôt sont dans le journal des 
 | [0021](0021-fusion-compte-machine-agents.md) | 2026-11-07 | Fusion des pull requests : compte machine pour les agents (rôle Write), une approbation requise, fusion par l'utilisateur seul (précise 0013, étape E10b) | décidée |
 | [0022](0022-panne-garde-bash.md) | 2026-11-07 | Panne du garde-fou Bash : refus limité aux commandes `git` et `gh`, nombre d'erreurs affiché à l'ouverture de session (non encore codé) | décidée |
 | [0023](0023-perimetre-garde-bash.md) | 2026-11-07 | Périmètre du garde-fou Bash : règles ajoutées au-delà du plan conservées ; garde sur Edit/Write reporté | décidée |
+| [0024](0024-jeton-compte-machine-classique.md) | 2026-11-07 | Jeton du compte machine : jeton classique à portée `repo` (précise 0021 : pas de granularité fine sur un dépôt personnel ; précisé par 0027) | décidée |
+| [0025](0025-barriere-serveur-codeowners.md) | 2026-11-07 | Barrière serveur : CODEOWNERS et revue du propriétaire (`require_code_owner_review`) ; les approbations du compte machine ne comptent plus (précise 0021, étape E10b) | décidée |
+| [0026](0026-isolement-identifiants-claudeus.md) | 2026-11-07 | Isolement des identifiants du propriétaire : agents dans Claudeus comme cible ; mesures intérimaires sur l'hôte (précise 0015) | décidée |
+| [0027](0027-portee-workflow-jamais.md) | 2026-11-07 | Portée `workflow` : jamais pour les agents (précise 0024) | décidée |
+| [0028](0028-garde-bash-identifiants-github.md) | 2026-11-07 | Extension du garde Bash aux identifiants GitHub (`gh auth token`, `GH_TOKEN`, `GITHUB_TOKEN`…) ; étend 0023 | décidée |
 
 Statuts possibles : `en attente` (question posée, pas encore de réponse), `décidée`, `remplacée par NNNN`.
 

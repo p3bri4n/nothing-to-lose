@@ -43,7 +43,7 @@ eval *ARGS:
 versions:
     python3 tools/check_tool_versions.py {{ if env_var_or_default("CI", "") == "true" { "--ci" } else { "" } }}
 
-# PP — vérifications du jalon PP : just verify-pp format|versions (tools/verify_pp.sh)
+# PP — vérifications du jalon PP : just verify-pp format|versions|secrets|merge-barrier (tools/verify_pp.sh ; merge-barrier est lancé par l'utilisateur, en lecture seule)
 verify-pp *ARGS:
     bash tools/verify_pp.sh "$@"
 

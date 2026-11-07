@@ -46,9 +46,9 @@ Les vérifications passent par `tools/verify_pp.sh`, appelé par `just verify-pp
 | U2 | Préparer `infra/terraform/terraform.tfvars` et un jeton d'administration dans `GITHUB_TOKEN`, puis lancer `just tf-init`, `just tf-plan` (à relire) et `just tf-apply` | après E2 |
 | U3 | Ajouter le remote (`git remote add origin …`) et faire le premier `git push -u origin main`, avec le contournement du propriétaire | après U2 |
 | U4 | `gh auth login` en local, avec le gh installé par mise | après U3 |
-| U5 | Créer le **jeton à granularité fine des agents** : limité à ce dépôt ; *Contents*, *Pull requests* et *Issues* en écriture ; *Workflows* en écriture si les agents modifient la CI ; durée courte. Le ranger hors du dépôt, par exemple dans `~/.config/nothing-to-lose/agents.env` (`chmod 600`, variable `GH_TOKEN`) | après U3 |
+| U5 | Créer le **jeton du compte machine des agents** (décision [0021](../decisions/0021-fusion-compte-machine-agents.md), précisée par [0024](../decisions/0024-jeton-compte-machine-classique.md) ; étape E10b ; jamais un jeton du compte propriétaire) : après création du compte, invitation acceptée et `tf-apply`. **Jeton classique à portée `repo`** (un jeton à granularité fine ne peut pas viser un dépôt personnel dont le compte est collaborateur) ; jamais la portée `workflow` ([0027](../decisions/0027-portee-workflow-jamais.md)) ; jamais `admin:*` ni autre portée ; durée courte (30 jours). Le compte n'a accès à aucun autre dépôt ni organisation. Le ranger hors du dépôt (`~/.config/nothing-to-lose/agents.env`, `chmod 600`, variable `GH_TOKEN`), puis révoquer l'ancien jeton U5 du propriétaire. Procédure : [`compte-machine-agents.md`](../technique/compte-machine-agents.md) | après U3 et E10b |
 | U6 | Relire la PR d'E3 (`bypass_mode`), la fusionner, puis relancer `just tf-plan` et `just tf-apply` | après U3 |
-| U7 | **Fusionner toutes les pull requests** : l'utilisateur est seul à le faire (D8) | à chaque PR |
+| U7 | **Fusionner toutes les pull requests** : l'utilisateur est seul à le faire (D8) ; les PR des agents (compte machine) sont approuvées ou fusionnées par contournement, les siennes par contournement | à chaque PR |
 
 ### 3.3 À vérifier immédiatement (E0)
 
@@ -82,7 +82,7 @@ Chaque étape se vérifie indépendamment. La sous-commande de `verify_pp.sh` qu
   - syntaxe de gitleaks 8.x : `gitleaks git --pre-commit --staged`, `--redact`, `[extend] useDefault`, `.gitleaksignore` ;
   - schéma des hooks Claude Code : `PostToolUse` et `PreToolUse`, matchers `Write|Edit|MultiEdit`, `$CLAUDE_PROJECT_DIR`, JSON reçu sur stdin, codes de sortie, `timeout`. Comportement des règles `deny` et des hooks en mode `--dangerously-skip-permissions` (point central pour Claudeus, voir §10) ;
   - `jdx/mise-action` : version courante, SHA, cache, utilisation de `GITHUB_TOKEN` contre les limites de débit ;
-  - syntaxe des issue forms GitHub ; permissions d'un jeton à granularité fine pour pousser, ouvrir une PR et modifier `.github/workflows/` ;
+  - syntaxe des issue forms GitHub ; permissions d'un jeton à granularité fine pour pousser, ouvrir une PR et modifier `.github/workflows/` (réponse : un jeton classique pour le compte machine, [0024](../decisions/0024-jeton-compte-machine-classique.md) ; pas de portée `workflow`, [0027](../decisions/0027-portee-workflow-jamais.md)) ;
   - effet de `bypass_mode = "pull_request"` dans le ruleset ; premier push sur un dépôt vide déjà couvert par le ruleset.
 - **Vérification** : la note existe, chaque version a une source et une date, et `python3 tools/check_links.py` passe.
 
@@ -103,7 +103,7 @@ Chaque étape se vérifie indépendamment. La sous-commande de `verify_pp.sh` qu
   - `infra/terraform/actions.tf` : ajouter `jdx/mise-action@*` à `patterns_allowed` (D3) ;
   - `infra/terraform/labels.tf` : ajouter `jalon:PP` ;
   - `infra/terraform/.terraform.lock.hcl` : versionné (plateforme `linux_amd64`).
-- **Vérification** : `just tf-check`, avec le terraform de mise (au besoin `terraform init -backend=false`). `just tf-plan` et `just tf-apply` sont lancés **par l'utilisateur** (U2), suivis de U3, U4 et U5.
+- **Vérification** : `just tf-check`, avec le terraform de mise (au besoin `terraform init -backend=false`). `just tf-plan` et `just tf-apply` sont lancés **par l'utilisateur** (U2), suivis de U3 et U4 ; U5 (jeton des agents) a lieu après E10b.
 
 ### E3 — `bypass_mode = "pull_request"` (première PR du circuit)
 
@@ -239,22 +239,30 @@ Chaque étape se vérifie indépendamment. La sous-commande de `verify_pp.sh` qu
   5. `gh pr checks --watch --required`.
   6. Prévenir l'utilisateur, qui fusionne (squash).
 
-  Les agents utilisent le jeton U5 (`GH_TOKEN`).
+  Les agents utilisent le jeton U5 (`GH_TOKEN`) ; depuis E10b, c'est le jeton du compte machine.
 - **Vérification** : tests unitaires de `guard_bash.py` sur des commandes autorisées et refusées, y compris des variantes comme `git -c x=y commit --no-verify`, `git commit -an` et `gh pr merge --auto`. Puis un essai manuel : quand on demande à Claude un `git commit --no-verify`, il est refusé avec une explication.
 
 **Scission E10 / E10b (décision de l'utilisateur, 2026-11-07, fiche [0021](../decisions/0021-fusion-compte-machine-agents.md)).** E10 garde les garde-fous (hook `guard_bash.py`, règles `deny`, tests, documentation). La fusion par les agents n'est pas traitée dans E10 : elle fait l'objet de **E10b**, PR séparée :
 
-- Terraform : `required_approving_review_count = 1` dans `ruleset.tf` (aujourd'hui `0`) ; variable `agents_account` ; ajout du compte machine comme collaborateur avec le rôle *Write* (pas administrateur) ;
-- jeton à granularité fine **du compte machine**, qui remplace U5 (*Contents*, *Pull requests* et *Issues* en écriture ; jamais rattaché au compte propriétaire) ;
-- actions de l'utilisateur : créer le compte machine, accepter l'invitation, créer le jeton, lancer `just tf-apply`.
+- Terraform : `required_approving_review_count = 1` dans `ruleset.tf` (aujourd'hui `0`) ; **CODEOWNERS** : fichier `.github/CODEOWNERS` et `require_code_owner_review = true` dans `ruleset.tf` ([0025](../decisions/0025-barriere-serveur-codeowners.md)) : seule l'approbation du propriétaire compte, celle du compte machine ne compte plus ; variable `agents_account` ; ajout du compte machine comme collaborateur avec le rôle *Write* (pas administrateur) ;
+- jeton **du compte machine**, qui remplace U5 : jeton classique à portée `repo` ([0024](../decisions/0024-jeton-compte-machine-classique.md), qui précise 0021 ; pas de granularité fine sur un dépôt personnel) ; jamais rattaché au compte propriétaire ;
+- actions de l'utilisateur : créer le compte machine, accepter l'invitation, créer le jeton, lancer `just tf-apply`. **Ordre** : fusionner la PR d'E10b, puis lancer `just tf-apply` **depuis `main`**, pour que `.github/CODEOWNERS` existe sur `main` quand le ruleset l'exige ([0025](../decisions/0025-barriere-serveur-codeowners.md)).
 
 Jusqu'à E10b, la fusion n'est protégée que par le hook et la discipline des agents. La mention « les agents utilisent le jeton U5 » ci-dessus vaut jusqu'à E10b.
+
+**E10b — réalisé dans le dépôt (2026-11-07), à appliquer par l'utilisateur.**
+- **Terraform** : variable `agents_account` (vide = aucun, validée) ; `infra/terraform/collaborator.tf` (`github_repository_collaborator`, permission `push`, refus du compte propriétaire) ; `ruleset.tf` à `required_approving_review_count = 1` avec `require_last_push_approval = true` (`dismiss_stale_reviews_on_push`, résolution des conversations et contournement `pull_request` du rôle admin inchangés) ; exemple dans `terraform.tfvars.example` ; sortie `agents_account`.
+- **Vérification** : `just verify-pp merge-barrier [--agents-account NAME]` (`tools/check_merge_barrier.py`, lecture seule, lancé par l'utilisateur) ; tests hermétiques `tools/tests/test_check_merge_barrier.py`.
+- **Documentation** : [`../technique/compte-machine-agents.md`](../technique/compte-machine-agents.md) (procédure de l'utilisateur), `circuit-git.md`, `garde-fous-bash.md`, `ci-cd.md`, `outillage.md`.
+- **Actions de l'utilisateur** : fusionner la PR d'E10b, puis depuis `main` : renseigner `agents_account`, `just tf-plan` puis `just tf-apply` ; créer le compte machine, accepter l'invitation, créer le jeton (U5), vérifier, révoquer l'ancien jeton U5 du propriétaire.
+- **Vérification CODEOWNERS** : une PR triviale ouverte par le propriétaire doit se fusionner par contournement administrateur seulement ; sinon, voie de secours : repasser temporairement le ruleset par Terraform ([0025](../decisions/0025-barriere-serveur-codeowners.md)).
+- **Non vérifié** : `tf-plan` réel ; attribut `require_code_owner_review` absent de la liste relevée par la recherche (§4), à confirmer dans le schéma installé du provider ; comportement du contournement pour les pull requests du propriétaire (ci-dessus) ; limite des jetons à granularité fine sur un dépôt personnel (documentée par GitHub, non testée ; le jeton classique est retenu par [0024](../decisions/0024-jeton-compte-machine-classique.md)) ; comportement exact du contournement administrateur ; refus effectif de l'API de fusion pour le compte machine ; identité du push (HTTPS et `gh auth setup-git`).
 
 ### E11 — Vérification finale
 
 - **Agent** : `testeur`.
 - **Commandes** :
-  - `just verify-pp all` (`secrets`, `format`, `versions`) ;
+  - `just verify-pp all` (`secrets`, `format`, `versions`) ; `merge-barrier` reste **hors de `all`**, car il demande le jeton du propriétaire ; il est lancé par l'utilisateur ;
   - `just verify-pp pr <n>` sur une PR de test (modification triviale de la documentation, liste de contrôle remplie), puis la contre-épreuve ;
   - test de bout en bout de C2 en local (procédure de C2, fichier d'essai à la racine, hors `.cache/`) ;
   - contrôle que l'étape `just versions` de `ci-cpu` est verte.
@@ -274,7 +282,7 @@ Jusqu'à E10b, la fusion n'est protégée que par le hook et la discipline des a
 | `tools/hooks/guard_bash.py` | JSON `PreToolUse` sur stdin. Renvoie 2 avec un message sur stderr si la commande est interdite, 0 sinon. |
 | `tools/check_tool_versions.py` | `[--print] [--ci]`. Renvoie 1 en cas d'écart. |
 | `tools/check_pr_checklist.py` | Lit `PR_BODY`. Renvoie 1 et liste les cases non cochées. |
-| `tools/verify_pp.sh` | `secrets\|format\|versions\|pr <n>\|all`. Renvoie 0 si le critère est rempli. |
+| `tools/verify_pp.sh` | `secrets\|format\|versions\|pr <n>\|merge-barrier [--agents-account NAME]\|all`. Renvoie 0 si le critère est rempli. `merge-barrier` (E10b, lecture seule, lancé par l'utilisateur) n'est pas dans `all`. |
 | Recettes `just` | `setup`, `hooks-install`, `pre-commit`, `secrets-scan`, `docs-links`, `fmt`, `fmt-check`, `versions`, `tools-test`, `lint`, `check` (= `lint` jusqu'à P1), `verify-pp` |
 
 ## 7. Risques et points de vigilance
@@ -286,7 +294,7 @@ Jusqu'à E10b, la fusion n'est protégée que par le hook et la discipline des a
 | R3 | **Système de fichiers** de `/run/media/…` (NTFS, exFAT ?) : bit d'exécution des hooks, liens symboliques, lenteur de `target/` et de `node_modules/`. | Vérification en E0. Au besoin, appeler les hooks via `bash .githooks/…` depuis un hook d'amorce, et placer les artefacts lourds hors du dépôt. |
 | R4 | `--no-verify` contourne les hooks Git. | Gitleaks et les liens refaits dans `ci-cpu` (obligatoire). Protection contre le push de secrets côté GitHub, déjà activée par Terraform. `guard_bash.py` côté agents. |
 | R5 | Fuite du faux secret de test dans le dépôt public (les références de PR ne s'effacent pas). | Jeton généré à l'exécution, utilisé seulement dans un dépôt temporaire, **jamais poussé**. Le contrôle CI se vérifie en local avec la même recette `secrets-scan`. |
-| R6 | **Jeton des agents** : un jeton du propriétaire hérite du contournement admin. Modifier `.github/workflows/` exige en plus la permission *Workflows*. | `bypass_mode = "pull_request"` (E3), `gh pr merge` interdit (E10), durée courte, dépôt unique, fichier `env` en `chmod 600` hors du dépôt. |
+| R6 | **Jeton des agents** : un jeton du propriétaire hérite du contournement admin. Le jeton classique des agents n'a pas la portée `workflow` : il ne peut donc pas modifier `.github/workflows/` ([0027](../decisions/0027-portee-workflow-jamais.md)). | `bypass_mode = "pull_request"` (E3), `gh pr merge` interdit (E10), compte machine en rôle *Write* sans contournement, approbation du propriétaire requise par CODEOWNERS (E10b, [0025](../decisions/0025-barriere-serveur-codeowners.md)), durée courte, compte sans accès à un autre dépôt (jeton classique à portée `repo`, [0024](../decisions/0024-jeton-compte-machine-classique.md)), fichier `env` en `chmod 600` hors du dépôt. Isolement réel des identifiants du propriétaire : Claudeus ([0026](../decisions/0026-isolement-identifiants-claudeus.md)). |
 | R7 | Agents lancés avec `--dangerously-skip-permissions` (Claudeus) : les règles `deny` risquent de ne pas s'appliquer. | `guard_bash.py` en hook `PreToolUse` ; comportement à confirmer en E0 et à tester dès que Claudeus sera utilisé sur ce dépôt. |
 | R8 | Le hook de formatage modifie un fichier juste après l'édition de Claude, si bien que le contenu attendu à l'édition suivante a changé. Un hook lent ou bavard gêne la session. | Observation en E6. Timeout de 30 s, pas d'échec bruyant, formatage limité au fichier touché. |
 | R9 | Les versions dérivent : la CI préinstalle python, node et gh ; `ubuntu-latest` évolue ; Dependabot ne lit pas `mise.toml`. | `just versions` en CI, `ubuntu-24.04`, mise à jour volontaire par une PR dédiée (procédure dans `docs/technique/outillage.md`). |
@@ -306,7 +314,7 @@ Jusqu'à E10b, la fusion n'est protégée que par le hook et la discipline des a
 - GPU, TabbyAPI, `laya-serve` et `docker compose` des services.
 - Enregistrement du runner GPU, activation de `GPU_EVAL_ENABLED` et toute modification des **déclencheurs** de `gpu-eval.yml`.
 - Cloudflare Pages, `DEPLOY_ENABLED`.
-- Signature des commits, CODEOWNERS, file de fusion, convention de commits imposée par un outil.
+- Signature des commits, file de fusion, convention de commits imposée par un outil. (CODEOWNERS n'est plus hors périmètre : étape E10b, [0025](../decisions/0025-barriere-serveur-codeowners.md).)
 - Renovate ou Dependabot pour mise et les actions ; retrait des actions devenues inutiles dans `actions.tf`.
 - Claude Code dans GitHub Actions.
 - Hooks Claude Code autres que le formatage et la garde Bash. **Exception ajoutée à la demande de l'utilisateur (2026-11-05)** : le hook `SessionStart` (`tools/hooks/session_start.py`) qui résume l'état du projet à l'ouverture de Claude Code, documenté dans [`../technique/hook-session-start.md`](../technique/hook-session-start.md). Il n'était pas prévu par ce plan.
@@ -317,7 +325,7 @@ Jusqu'à E10b, la fusion n'est protégée que par le hook et la discipline des a
 | Fichier | Contenu |
 |---|---|
 | `docs/technique/outillage.md` (nouveau) | mise, références des versions (`mise.toml`, `rust-toolchain.toml`), `just setup`, procédure de mise à jour d'un outil, formateurs et leur configuration, hook Claude Code |
-| `docs/technique/circuit-git.md` (nouveau) | branches, PR, liste de contrôle, modèles de tickets, hooks Git, garde-fous des agents, jeton des agents, fusion réservée à l'utilisateur |
+| `docs/technique/circuit-git.md` (nouveau) | branches, PR, liste de contrôle, modèles de tickets, hooks Git, garde-fous des agents, compte machine et jeton des agents ([`compte-machine-agents.md`](../technique/compte-machine-agents.md)), fusion réservée à l'utilisateur |
 | `docs/technique/commandes.md` (nouveau, prévu dans l'index) | toutes les recettes `just` |
 | `docs/technique/ci-cd.md` | mise en CI, nouvelles étapes de `ci-cpu`, `jdx/mise-action` autorisée, label `jalon:PP`, contrôle de la liste, gitleaks, `bypass_mode = "pull_request"` |
 | `docs/technique/README.md` | index |
@@ -333,7 +341,7 @@ Jusqu'à E10b, la fusion n'est protégée que par le hook et la discipline des a
 **Décision de l'utilisateur (D6)** : l'image du sandbox est reportée après PP. L'utilisateur dispose de son propre outil, **Claudeus** (<https://github.com/p3bri4n/claudeus>). C'est une image `node:20` complétée par `apt`, commune à tous ses projets et **sans mise**. Ce que PP en tient compte dès maintenant :
 
 - **C4** se limite au local et à la CI. Le critère d'origine (« … dans le sandbox … ») sera rétabli quand le sandbox sera traité.
-- **`guard_bash.py`** (E10) est la principale protection des agents dans Claudeus, qui tourne par défaut avec `--dangerously-skip-permissions`.
+- **`guard_bash.py`** (E10, étendu par [0028](../decisions/0028-garde-bash-identifiants-github.md)) est une **première barrière** seulement : elle est locale, fondée sur l'analyse textuelle de la commande, et contournable (script, `curl`, lecture directe d'un fichier). Dans Claudeus, qui tourne par défaut avec `--dangerously-skip-permissions`, la barrière réelle est l'**isolement des identifiants** du propriétaire (conteneur sans `~/.config/gh` ni `~/.ssh`, seul le `GH_TOKEN` du compte machine injecté) combiné au **ruleset** à approbation du propriétaire ([0025](../decisions/0025-barriere-serveur-codeowners.md), [0026](../decisions/0026-isolement-identifiants-claudeus.md)). L'adaptation de Claudeus reste **à planifier** : sa date n'est pas fixée ([17](../conception/17-questions-ouvertes.md)). D'ici là, sur l'hôte, seules des mesures intérimaires existent (environnement nettoyé, avertissement au démarrage, garde-fou) : elles protègent contre l'erreur d'un agent, pas contre un agent qui chercherait les identifiants.
 
 **Problèmes probables de Claudeus sur ce dépôt** (à vérifier, non testés) :
 
@@ -350,7 +358,7 @@ Jusqu'à E10b, la fusion n'est protégée que par le hook et la discipline des a
 
 Points de vigilance à reprendre : UID et GID, `safe.directory`, `CARGO_TARGET_DIR` et `UV_PROJECT_ENVIRONMENT` séparés entre l'hôte et le conteneur, pas de socket Docker, pas de GPU, identifiants Claude Code (volume dédié plutôt que montage de `~/.claude`), jeton des agents passé par `--env-file`.
 
-## 11. Décisions de l'utilisateur (2026-11-05)
+## 11. Décisions de l'utilisateur (2026-11-05, et 2026-11-07 pour 0021 à 0028)
 
 | # | Sujet | Décision |
 |---|---|---|
@@ -361,8 +369,16 @@ Points de vigilance à reprendre : UID et GID, `safe.directory`, `CARGO_TARGET_D
 | D5 | Politique de versions | Versions exactes partout, Claude Code compris ; mise à jour par PR dédiée. Valeurs proposées après E0. |
 | D6 | Sandbox Docker | **Reporté** après PP (§10) |
 | D7 | Formateurs | Socle rustfmt, ruff, taplo, terraform fmt, shfmt, prettier ; **Markdown exclu** |
-| D8 | Identité et fusion | Jeton à granularité fine pour les agents ; `bypass_mode = "pull_request"` après le premier push ; **l'utilisateur seul fusionne** |
+| D8 | Identité et fusion | Compte machine pour les agents (rôle *Write*, jeton classique à portée `repo` du compte machine, [0021](../decisions/0021-fusion-compte-machine-agents.md) précisée par [0024](../decisions/0024-jeton-compte-machine-classique.md)) ; une approbation requise ; `bypass_mode = "pull_request"` après le premier push ; **l'utilisateur seul fusionne** (approbation ou contournement) |
 | D9 | Séquencement | `tf-apply` et premier push pendant PP, juste après E2 |
+| 0021 | Fusion et identité des agents (2026-11-07) | Compte machine pour les agents (rôle *Write*), une approbation requise, fusion réservée à l'utilisateur ; précisée par 0024 et 0025 |
+| 0022 | Panne du garde-fou Bash (2026-11-07) | Refus pour `git` et `gh` pendant une panne, passage pour le reste, erreurs affichées à l'ouverture de session |
+| 0023 | Périmètre du garde-fou Bash (2026-11-07) | Règles ajoutées au-delà du plan conservées ; garde sur `Edit` et `Write` reporté ; étendu par 0028 |
+| 0024 | Jeton du compte machine (2026-11-07) | Jeton classique à portée `repo`, durée courte (30 jours) ; précise 0021 |
+| 0025 | Barrière serveur (2026-11-07) | `.github/CODEOWNERS` et `require_code_owner_review` : seule l'approbation du propriétaire compte |
+| 0026 | Isolement des identifiants (2026-11-07) | Cible : agents seulement dans Claudeus ; mesures intérimaires sur l'hôte ; précise 0015 |
+| 0027 | Portée `workflow` (2026-11-07) | Jamais pour les agents : l'agent prépare le changement de workflow, l'utilisateur le pousse |
+| 0028 | Garde-fou et identifiants GitHub (2026-11-07) | Refus de `gh auth` (jeton, connexion, bascule) et des affectations ou retraits de `GH_TOKEN` et `GITHUB_TOKEN` ; palliatif partiel ; étend 0023 |
 
 ## 12. Choix mineurs pris en autonomie (à noter dans le journal)
 

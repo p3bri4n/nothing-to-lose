@@ -1,8 +1,8 @@
 # CI/CD et infrastructure GitHub
 
-*Mise à jour : 2026-11-07 (étape E9 du jalon PP : CI alignée sur mise, actions épinglées par SHA, contrôle de la liste de contrôle branché)*
+*Mise à jour : 2026-11-07 (étape E10b du jalon PP : compte machine des agents, ruleset à une approbation, jeton classique à portée `repo` du compte machine : [0024](../decisions/0024-jeton-compte-machine-classique.md) ; E9 : CI alignée sur mise, actions épinglées par SHA, contrôle de la liste de contrôle branché)*
 
-Décisions : [0001](../decisions/0001-terraform-pour-github.md), [0002](../decisions/0002-etat-terraform-local.md), [0003](../decisions/0003-depot-public.md), [0004](../decisions/0004-cloudflare-pages.md).
+Décisions : [0001](../decisions/0001-terraform-pour-github.md), [0002](../decisions/0002-etat-terraform-local.md), [0003](../decisions/0003-depot-public.md), [0004](../decisions/0004-cloudflare-pages.md), [0021](../decisions/0021-fusion-compte-machine-agents.md), [0024](../decisions/0024-jeton-compte-machine-classique.md), [0025](../decisions/0025-barriere-serveur-codeowners.md), [0026](../decisions/0026-isolement-identifiants-claudeus.md).
 
 ## Vue d'ensemble
 
@@ -40,12 +40,21 @@ Si le dépôt existe déjà sur GitHub : `terraform import github_repository.mai
 **État** : local, hors du dépôt. Il contient les valeurs des secrets fournis à Terraform : le sauvegarder dans un endroit sûr et chiffré.
 
 **Points à vérifier au premier `plan`** :
-- `actor_id = 5` dans `ruleset.tf` (rôle de dépôt « admin » pour le contournement d'urgence) ;
+- `actor_id = 5` dans `ruleset.tf` (rôle de dépôt « admin » pour le contournement du propriétaire) ; `just verify-pp merge-barrier` le relit après l'`apply` ;
+- avec `agents_account` renseigné : l'ajout de `github_repository_collaborator.agents[0]` (permission `push`) et le passage du ruleset à une approbation d'un propriétaire du code, **modifié en place** (`~`) et jamais remplacé (`-/+`), sans aucun changement de `bypass_actors`, et rien d'autre ; un `tf-plan` sur `main` doit être propre **avant** de fusionner E10b, et `tf-apply` se lance **après** cette fusion (ordre : [`compte-machine-agents.md`](compte-machine-agents.md), étapes (0) et (c)) ;
 - disponibilité de `security_and_analysis` sur un dépôt public personnel.
 
 ## Ruleset de la branche principale
 
-Passage obligatoire par une pull request (0 approbation requise, conversations résolues), check `ci-cpu` obligatoire et à jour, historique linéaire, ni suppression ni force-push. Le propriétaire peut contourner les règles en cas d'urgence.
+Passage obligatoire par une pull request avec **une approbation d'un propriétaire du code** (`required_approving_review_count = 1`, `require_code_owner_review = true` avec [`.github/CODEOWNERS`](../../.github/CODEOWNERS) `* @p3bri4n`, `require_last_push_approval = true`, approbations périmées par un nouveau push, conversations résolues), check `ci-cpu` obligatoire et à jour, historique linéaire, ni suppression ni force-push. Le rôle *admin* (le propriétaire) contourne les règles **par une pull request seulement** (`bypass_mode = "pull_request"`, `actor_id = 5`) ; personne ne pousse directement sur la branche principale.
+
+Ce ruleset est la barrière serveur de la fusion ([0025](../decisions/0025-barriere-serveur-codeowners.md)). **Sur l'hôte**, les agents partagent le compte Unix du propriétaire : cette barrière ne protège que contre l'erreur d'un agent, tant que les identifiants du propriétaire restent à leur portée. Elle devient réelle quand les agents tournent dans Claudeus, sans ces identifiants ([0026](../decisions/0026-isolement-identifiants-claudeus.md), intérimaire d'ici là ; détail dans [`compte-machine-agents.md`](compte-machine-agents.md), « Limites »).
+
+### Compte machine des agents (E10b, `collaborator.tf`)
+
+La variable `agents_account` (défaut `""` = aucun) désigne l'identifiant GitHub du compte machine des agents. Renseignée, elle crée `github_repository_collaborator.agents[0]` avec la permission **`push`** (rôle *Write* ; jamais `admin` ni `maintain` ; le provider n'accepte que `push` sur un dépôt personnel) et une garde (`precondition`) qui refuse le compte du propriétaire. Terraform envoie une invitation, que le compte machine doit accepter. La variable est validée (vide ou identifiant GitHub valide). La sortie `agents_account` rappelle la valeur (sans secret). Le compte machine n'a pas de contournement : il ne peut pas approuver sa propre pull request ni fusionner seul, et ses approbations ne comptent pas (il n'est pas propriétaire du code) ; le propriétaire approuve ou fusionne par contournement, et c'est la seule voie pour ses propres pull requests.
+
+Procédure complète pour l'utilisateur (création du compte, invitation, jeton classique à portée `repo`, vérification) : [`compte-machine-agents.md`](compte-machine-agents.md). Vérification de la configuration appliquée : `just verify-pp merge-barrier` ([`outillage.md`](outillage.md)). **Non vérifié** : `just tf-plan` n'a pas pu aller au bout lors de l'écriture (jeton sans droits d'administration) ; seuls `terraform validate` et le schéma du provider ont été contrôlés.
 
 ## CI sans GPU (`ci.yml`)
 
