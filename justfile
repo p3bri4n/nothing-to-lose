@@ -45,7 +45,7 @@ tf_state := env_var_or_default("TF_STATE_PATH", env_var("HOME") + "/.local/share
 # Initialiser Terraform (une fois, ou après un changement de provider)
 tf-init:
     mkdir -p "$(dirname '{{tf_state}}')"
-    cd infra/terraform && terraform init -backend-config="path={{tf_state}}"
+    cd infra/terraform && terraform init -reconfigure -backend-config="path={{tf_state}}"
 
 # Vérifier le format et la validité
 tf-check:

@@ -33,6 +33,8 @@ git remote add origin "$(cd infra/terraform && terraform output -raw repository_
 git push -u origin main
 ```
 
+**Piège du premier `apply` (constaté le 2026-11-07)** : GitHub crée des labels par défaut dans tout nouveau dépôt (`bug`, `documentation`, `duplicate`, `enhancement`…). Le label `bug` de `labels.tf` échoue alors en `422 already_exists`. Supprimer le label par défaut (`curl -X DELETE -H "Authorization: Bearer $GITHUB_TOKEN" https://api.github.com/repos/<propriétaire>/nothing-to-lose/labels/bug`, code `204`), puis relancer `just tf-apply` : Terraform reprend où il s'est arrêté.
+
 Si le dépôt existe déjà sur GitHub : `terraform import github_repository.main nothing-to-lose` avant le premier `apply` (commande réservée à l'utilisateur).
 
 **État** : local, hors du dépôt. Il contient les valeurs des secrets fournis à Terraform : le sauvegarder dans un endroit sûr et chiffré.
