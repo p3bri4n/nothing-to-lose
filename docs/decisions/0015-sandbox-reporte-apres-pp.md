@@ -11,7 +11,7 @@
   - le critère de PP sur les versions d'outils (critère C4) est limité au local et à la CI.
 - **Points à traiter plus tard** (relevés lors de la décision, non vérifiés) :
   - Claudeus n'installe pas mise : son image (node:20 + apt) est commune à tous les projets ;
-  - son montage `-v "$PROJECT_DIR":/workspace` et son nom de conteneur `--name claudeus-<dossier>` échouent probablement avec le chemin du dépôt « Guide Or Fade : Your command » ;
+  - son montage `-v "$PROJECT_DIR":/workspace` et son nom de conteneur `--name claudeus-<dossier>` échouaient probablement avec l'ancien chemin du dépôt (« Guide Or Fade : Your command », avec espaces et « : »). Le dossier s'appelle désormais `nothing-to-lose` (renommé le 2026-11-07) : ce point ne devrait plus se produire, à revérifier ;
   - sa liste blanche réseau ne contient pas les domaines de téléchargement de mise ;
   - il tourne par défaut avec `--dangerously-skip-permissions`.
 - **Conséquences** :

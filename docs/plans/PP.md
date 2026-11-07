@@ -328,8 +328,8 @@ Chaque étape se vérifie indépendamment. La sous-commande de `verify_pp.sh` qu
 
 **Problèmes probables de Claudeus sur ce dépôt** (à vérifier, non testés) :
 
-1. `-v "$PROJECT_DIR":/workspace` : le « : » de « Guide Or Fade : Your command » est lu comme un séparateur par la syntaxe `-v`. Il faut `--mount type=bind,source="$PROJECT_DIR",target=/workspace`.
-2. `--name claudeus-<dossier>` : les espaces et le « : » ne sont pas autorisés dans un nom de conteneur Docker (`[a-zA-Z0-9][a-zA-Z0-9_.-]*`). Il faut assainir le nom, par exemple en remplaçant tout autre caractère par `-`.
+1. `-v "$PROJECT_DIR":/workspace` : avec l'ancien chemin du dépôt (« Guide Or Fade : Your command »), le « : » était lu comme un séparateur par la syntaxe `-v`. Le dossier est désormais `nothing-to-lose` (renommé le 2026-11-07), mais `--mount` reste plus sûr : `--mount type=bind,source="$PROJECT_DIR",target=/workspace`.
+2. `--name claudeus-<dossier>` : les espaces et le « : » de l'ancien chemin n'étaient pas autorisés dans un nom de conteneur Docker (`[a-zA-Z0-9][a-zA-Z0-9_.-]*`). Il faut assainir le nom, par exemple en remplaçant tout autre caractère par `-`.
 3. **Liste blanche réseau** : elle n'inclut pas les domaines de téléchargement de mise (dépôts GitHub des outils, `mise.jdx.dev`, miroirs Node, Python et Rust selon les backends), ni peut-être `static.rust-lang.org`. Sans eux, `mise install` échoue dans le conteneur.
 4. **Pas de mise dans l'image** : les versions du conteneur (node 20, outils `apt`) ne correspondent pas à `mise.toml`. Les hooks Git (fermés par défaut) refuseront donc les commits faute de `mise` et de `gitleaks`, ce qui est voulu mais bloque le travail des agents.
 
