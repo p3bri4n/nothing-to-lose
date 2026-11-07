@@ -78,9 +78,12 @@ pre-commit:
 secrets-scan:
     gitleaks git --redact
 
-# À venir : actionlint (E8), à ajouter à `lint` dans son étape.
+# PP — vérifier les workflows GitHub (actionlint ; configuration : .github/actionlint.yaml)
+actionlint:
+    actionlint -config-file .github/actionlint.yaml
+
 # PP — contrôles statiques : versions, tests des outils, formatage, liens, secrets, Terraform
-lint: versions tools-test fmt-check docs-links secrets-scan tf-check
+lint: versions tools-test fmt-check docs-links secrets-scan actionlint tf-check
 
 # --- Infrastructure GitHub (Terraform) ---
 # État local hors dépôt (décision 0002). Le jeton GitHub vient de GITHUB_TOKEN.

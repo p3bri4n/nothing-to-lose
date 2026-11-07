@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Documentation du projet
+    url: https://github.com/p3bri4n/nothing-to-lose/tree/main/docs
+    about: Conception, décisions, journal et documentation technique.

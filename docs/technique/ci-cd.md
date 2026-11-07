@@ -80,6 +80,8 @@ Les tests qui dépendent de Laya ou du LLM utilisent des doublures (réponses en
 
 ```bash
 just tf-check                                                  # terraform fmt + validate
-actionlint -config-file .github/actionlint.yaml .github/workflows/*.yml
+just actionlint                                                # workflows (config : .github/actionlint.yaml)
 python3 tools/check_links.py
 ```
+
+Le contrôle de la liste de contrôle des pull requests (`tools/check_pr_checklist.py`) n'est pas encore branché dans `ci.yml` (prévu en E9) : voir [`modeles-github.md`](modeles-github.md).

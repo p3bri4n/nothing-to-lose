@@ -16,5 +16,6 @@ Décrit le code **tel qu'il existe**, pas tel qu'il est prévu (le prévu est da
 - [`hook-format-on-edit.md`](hook-format-on-edit.md) — hook PostToolUse : formatage automatique du fichier que Claude vient d'écrire ou de modifier (`tools/hooks/format_on_edit.py`) (disponible)
 - [`hooks-git.md`](hooks-git.md) — hook Git `pre-commit` (gitleaks sur les changements indexés, liens de la documentation), recettes `hooks-install`, `pre-commit`, `secrets-scan`, contournement `--no-verify`, faux positifs (disponible)
 - [`outillage.md`](outillage.md) — source unique des versions (`mise.toml`, `rust-toolchain.toml`), formatage (`tools/fmt.py`, `just fmt`, `just fmt-check`, configurations), `just lint`, `just versions`, `just tools-test`, `tools/verify_pp.sh`, procédure de mise à jour (disponible)
+- [`modeles-github.md`](modeles-github.md) — modèle de PR, formulaires de tickets, `tools/check_pr_checklist.py` (contrôle de la liste de contrôle, variables `PR_BODY` et `PR_AUTHOR`), `just actionlint` (disponible ; pas encore branché dans `ci.yml`, prévu en E9)
 
 Chaque page indique en tête la date de sa dernière mise à jour.
