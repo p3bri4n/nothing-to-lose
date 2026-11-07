@@ -14,6 +14,9 @@ Usage: python3 tools/fmt.py (--write | --check) [paths...]  (from anywhere)
   versions pinned in ``mise.toml`` and the configuration files at the root
   (``ruff.toml``, ``taplo.toml``, ``.prettierrc.json``, ``rustfmt.toml``,
   ``.editorconfig``) apply. Commands are argument lists, never shell strings.
+- prettier always receives ``--config <root>/.prettierrc.json``: this disables its
+  upward search for configuration files, so a ``prettier.config.js`` (which prettier
+  would execute) sitting next to a formatted file is never loaded.
 - ``--write`` rewrites the files in place; ``--check`` only reports.
 
 Exit code 1 if a file is not formatted (``--check``), if a formatter fails or is
@@ -46,6 +49,9 @@ class Formatter:
     # Command prefixes (the files are appended). Verified on the pinned versions.
     write: tuple[str, ...]
     check: tuple[str, ...]
+    # Root-relative configuration file always passed with ``--config`` (None: the
+    # formatter finds its own configuration).
+    config_file: str | None = None
 
 
 FORMATTERS: dict[str, Formatter] = {
@@ -67,7 +73,13 @@ FORMATTERS: dict[str, Formatter] = {
             ("shfmt", "-i", "2", "-ci", "-d"),
         ),
         # prettier is installed by mise (no package.json at the root).
-        Formatter("prettier", ("prettier", "--write"), ("prettier", "--check")),
+        # ``--config`` is mandatory: see the module docstring (no config search).
+        Formatter(
+            "prettier",
+            ("prettier", "--write"),
+            ("prettier", "--check"),
+            config_file=".prettierrc.json",
+        ),
     )
 }
 
@@ -125,12 +137,20 @@ def protect_arg(path: str) -> str:
     return "./" + path if path.startswith("-") else path
 
 
-def build_command(formatter: Formatter, mode: str, files: list[str]) -> list[str]:
+def build_command(
+    formatter: Formatter,
+    mode: str,
+    files: list[str],
+    root: pathlib.Path = REPO_ROOT,
+) -> list[str]:
     """The full command (through mise) for one formatter. ``mode``: write|check."""
     if mode not in ("write", "check"):
         raise ValueError(f"unknown mode {mode!r}")
     prefix = formatter.write if mode == "write" else formatter.check
-    return ["mise", "exec", "--", *prefix, *(protect_arg(f) for f in files)]
+    config = (
+        ["--config", str(root / formatter.config_file)] if formatter.config_file else []
+    )
+    return ["mise", "exec", "--", *prefix, *config, *(protect_arg(f) for f in files)]
 
 
 def display_path(path: pathlib.Path, root: pathlib.Path) -> str:

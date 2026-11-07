@@ -2,6 +2,7 @@
 # Les recettes marquées « à venir » seront implémentées au jalon indiqué.
 
 set shell := ["bash", "-euo", "pipefail", "-c"]
+set positional-arguments
 
 default:
     @just --list
@@ -40,6 +41,10 @@ eval *ARGS:
 # PP — vérifier que les outils installés correspondent à mise.toml (--ci si CI=true)
 versions:
     python3 tools/check_tool_versions.py {{ if env_var_or_default("CI", "") == "true" { "--ci" } else { "" } }}
+
+# PP — vérifications du jalon PP : just verify-pp format|versions (tools/verify_pp.sh)
+verify-pp *ARGS:
+    bash tools/verify_pp.sh "$@"
 
 # PP — tests des outils du dépôt (tools/tests)
 tools-test:

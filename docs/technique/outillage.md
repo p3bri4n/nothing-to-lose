@@ -1,6 +1,6 @@
 # Outillage : versions des outils, formatage et vérification
 
-*Mise à jour : 2026-11-07 (ajout du formatage : `tools/fmt.py`, configurations, `just fmt`, `just fmt-check`, `just lint`)*
+*Mise à jour : 2026-11-07 (ajout du hook de formatage à l'édition, de `just verify-pp` et de la sous-commande `format`)*
 
 Décrit le code **tel qu'il existe** : source unique des versions, commande `just versions`, formatage (`tools/fmt.py`, `just fmt`, `just fmt-check`), recette `just lint`, tests des outils, sous-commande `tools/verify_pp.sh versions`, procédure de mise à jour. La politique (versions exactes partout) est dans [0011](../decisions/0011-politique-versions-exactes.md) ; le Markdown hors formatage est dans [0012](../decisions/0012-markdown-hors-formatage.md). Les sources et dates des versions sont dans [la note de recherche](../recherches/2026-11-05-outillage-pp.md).
 
@@ -105,11 +105,12 @@ Le script se lance depuis n'importe quel répertoire (`REPO_ROOT` est déduit de
 | `.toml` | taplo | `taplo fmt <fichiers>` | `taplo fmt --check <fichiers>` |
 | `.tf` | terraform | `terraform fmt <fichiers>` | `terraform fmt -check -diff <fichiers>` |
 | `.sh` | shfmt | `shfmt -i 2 -ci -w <fichiers>` | `shfmt -i 2 -ci -d <fichiers>` |
-| `.json`, `.yaml`, `.yml`, `.js`, `.ts`, `.html`, `.css` | prettier | `prettier --write <fichiers>` | `prettier --check <fichiers>` |
+| `.json`, `.yaml`, `.yml`, `.js`, `.ts`, `.html`, `.css` | prettier | `prettier --write --config <racine>/.prettierrc.json <fichiers>` | `prettier --check --config <racine>/.prettierrc.json <fichiers>` |
 
 - `.yml` a été ajouté à la table du plan PP (les workflows GitHub sont en `.yml`) ; il est traité comme `.yaml`.
 - Extensions comparées en minuscules ; seule la dernière extension compte (`a.tar.json` → prettier, `a.py.md` → aucun formateur).
 - Les formateurs sont lancés via `mise exec --` depuis la racine du dépôt, pour que les versions de `mise.toml` et les fichiers de configuration de la racine s'appliquent. Les commandes sont des listes d'arguments, jamais des chaînes passées au shell. Un chemin qui commence par `-` est préfixé par `./`.
+- prettier reçoit **toujours** `--config <racine>/.prettierrc.json` (champ `config_file` de `Formatter`, argument `root` de `build_command`) : sa recherche de configuration vers le haut est alors désactivée, donc un `prettier.config.js` (que prettier exécute) placé près d'un fichier formaté n'est jamais chargé. `.editorconfig` reste lu (pas de code exécutable). Vérifié par `PrettierConfigIsolationTest` (voir ci-dessous).
 - Un formateur est lancé **une seule fois** avec tous ses fichiers ; délai de 600 secondes (`TIMEOUT_SECONDS`). Tous les formateurs sont lancés même si l'un échoue.
 
 ### Fichiers traités
@@ -150,10 +151,15 @@ Fichiers à la racine du dépôt, lus par les formateurs :
 | `fmt` | `python3 tools/fmt.py --write`, puis `just --fmt --unstable` (formate le `justfile`). |
 | `fmt-check` | `python3 tools/fmt.py --check`, puis `just --fmt --check --unstable` (vérifie le `justfile`). |
 | `docs-links` | `python3 tools/check_links.py` |
+| `verify-pp *ARGS` | `bash tools/verify_pp.sh <sous-commande>` (voir plus bas). |
 | `lint` | `versions`, `tools-test`, `fmt-check`, `docs-links`, `tf-check`. |
 | `check` | `lint` seul pour l'instant (P1 y ajoutera tests, non-régression, invariants, mini-partie). |
 
 `lint` n'inclut pas encore `secrets-scan` (étape E7) ni `actionlint` (étape E8) : le commentaire du `justfile` le rappelle. `tf-check` vérifie `terraform fmt -check -recursive` puis `terraform validate` dans `infra/terraform/`.
+
+## Hook de formatage à l'édition
+
+Le hook `PostToolUse` de `.claude/settings.json` lance `tools/hooks/format_on_edit.py` après chaque `Write`, `Edit` ou `MultiEdit` de Claude Code. Il appelle `tools/fmt.py --write <fichier>` sur le seul fichier touché, ne bloque jamais la session, refuse de formater tant que la configuration des outils (`mise.toml`, `mise.local.toml`, `.prettierrc.json`, `rust-toolchain.toml`) diffère de `HEAD`, et se désactive avec `NTL_FORMAT_HOOK=off`. Comportement, journal et limites : [`hook-format-on-edit.md`](hook-format-on-edit.md).
 
 ## `just tools-test` : tests des outils
 
@@ -161,10 +167,10 @@ Fichiers à la racine du dépôt, lus par les formateurs :
 python3 -m unittest discover -s tools/tests
 ```
 
-- Fichiers : `tools/tests/__init__.py` (vide), `tools/tests/test_check_tool_versions.py` et `tools/tests/test_fmt.py`.
+- Fichiers : `tools/tests/__init__.py` (vide), `tools/tests/test_check_tool_versions.py`, `tools/tests/test_fmt.py` et `tools/tests/test_format_on_edit.py` (surtout hermétique : `subprocess.run` et `subprocess.Popen` sont remplacés par des faux ; quelques tests utilisent le vrai `git` dans un dépôt jetable ou un vrai processus enfant ; voir [`hook-format-on-edit.md`](hook-format-on-edit.md)).
 - **Hermétiques** pour `test_check_tool_versions.py` : `subprocess.run` est remplacé par un faux (`fake_run`) ; aucun outil réel n'est exécuté. La configuration est écrite dans un répertoire temporaire, et `REPO_ROOT` est redirigé vers lui (`MainTests.setUp`).
 - Classes de `test_check_tool_versions.py` : `ParseVersionTests`, `HelpersTests`, `CompareTests`, `FormatLineTests`, `RustToolchainTests`, `RunVersionTests`, `MainTests`.
-- Classes de `test_fmt.py` : `FormatterSelectionTest`, `PathFilteringTest`, `BuildCommandTest`, `RunFormatterTest`, `ResolveExplicitTest`, `MainTest` (hermétiques : aucun formateur n'est exécuté), et `FixtureIntegrationTest` (une sous-épreuve par fixture, ignorée avec un message si `mise` ou le formateur manque ; disponibilité mise en cache, un seul `mise exec` par formateur).
+- Classes de `test_fmt.py` : `FormatterSelectionTest`, `PathFilteringTest`, `BuildCommandTest`, `RunFormatterTest`, `ResolveExplicitTest`, `MainTest` (hermétiques : aucun formateur n'est exécuté), `FixtureIntegrationTest` (une sous-épreuve par fixture, ignorée avec un message si `mise` ou le formateur manque ; disponibilité mise en cache, un seul `mise exec` par formateur) et `PrettierConfigIsolationTest` (un `prettier.config.js` piégé, qui écrit un fichier témoin, est placé dans un dossier temporaire à côté d'un `.js` : sans `--config` il s'exécute — contrôle —, avec la commande de `fmt.py` il ne s'exécute pas ; ignoré si `mise` ou prettier manque).
 - `FixtureIntegrationTest` **n'est pas hermétique** : il lance les vrais formateurs sur les fixtures lorsque `mise exec -- <outil> --version` réussit pour l'outil concerné, et passe ce cas sinon. Il est sauté entièrement si aucun formateur n'est disponible.
 
 ### Fixtures de formatage
@@ -188,11 +194,28 @@ tools/verify_pp.sh <sous-commande> [arguments]
 | Sous-commande | Effet |
 |---|---|
 | `versions` | Lance `python3 tools/check_tool_versions.py` avec les arguments transmis (`--ci`, `--print`…). |
+| `format` | Partie automatique du critère C2 (hook de formatage) : voir ci-dessous. |
 
 Codes de retour :
 
 - `2` : aucune sous-commande, ou sous-commande inconnue (message d'usage sur stderr) ;
 - sinon, le code de retour de `check_tool_versions.py` (`0`, `1`, ou `2` pour une option inconnue).
+
+La recette `just verify-pp <sous-commande> [arguments]` lance `bash tools/verify_pp.sh "$@"` (`set positional-arguments` dans le `justfile` : les arguments gardent leurs frontières).
+
+### Sous-commande `format`
+
+Crée un dossier temporaire `.verify-pp-format.XXXXXX` **à la racine du dépôt** (le hook ignore ce qui est hors du projet ou ignoré par Git, donc ni `/tmp` ni `.cache/`), supprimé à la sortie par un `trap EXIT`. Puis :
+
+1. pour `bad.py`, `bad.toml`, `bad.tf`, `bad.sh`, `bad.yaml`, `bad.json`, `bad.rs` (copies des fixtures) : vérifie que `fmt.py --check` échoue avant, envoie au hook un JSON `PostToolUse` simulé, vérifie le code 0, l'absence de sortie sur stdout, puis que `fmt.py --check` réussit ;
+2. un fichier `.md` mal formaté reste identique octet pour octet ;
+3. avec `NTL_FORMAT_HOOK=off`, un fichier mal formaté reste inchangé ;
+4. garde de la configuration : avec un `mise.local.toml` vide créé temporairement à la racine (ignoré par Git, mais présent), le hook ne touche pas un fichier mal formaté et écrit une ligne `formatting refused` dans le journal ; le fichier est supprimé aussitôt (et à la sortie, par le `trap`) ;
+5. des entrées absurdes (stdin vide, `not json`, `{`, `[]`, `file_path` numérique, fichier inexistant) donnent le code 0 sans sortie.
+
+**Saut propre** : si `mise.toml`, `mise.local.toml`, `.prettierrc.json` ou `rust-toolchain.toml` diffère de `HEAD` (modifié, non suivi, ignoré mais présent), le hook refuserait de formater et le test ne pourrait pas réussir : la sous-commande affiche `SKIP C2 (automatic part)` avec la liste des fichiers et sort avec le code 0. Il faut alors valider ou annuler ces changements puis relancer pour obtenir une vraie vérification.
+
+Sortie finale : `OK C2 (automatic part)` et code 0, sinon `FAILED C2 (automatic part)` et code 1. Les entrées JSON invalides ajoutent des lignes à `.cache/hooks/format.log` du dépôt (ignoré par Git). Le test de bout en bout dans Claude Code reste manuel.
 
 D'autres sous-commandes seront ajoutées au fil des étapes du jalon PP. Le script est un point d'entrée distinct de `just versions`, qui n'appelle pas le script shell.
 
@@ -219,7 +242,7 @@ Commit `5f37321` « Formatage initial du dépôt (just fmt) », séparé des sui
 
 - **`rustfmt.toml`** (`edition = "2024"`, `max_width = 100`) : à reconfirmer en P1, quand le premier crate sera créé.
 - **CI** : le job `ci-cpu` (`.github/workflows/ci.yml`) n'exécute aujourd'hui que `python3 tools/check_links.py`, et `just check` seulement si `Cargo.toml` existe. Le workflow n'installe pas mise, donc `just fmt-check` et `just versions` ne tournent pas en CI à la date de cette page. Le plan PP prévoit ces étapes dans l'étape E9 (« CI alignée sur mise ») ; à vérifier à ce moment.
-- **Hook de formatage à l'édition** : `tools/hooks/format_on_edit.py`, prévu par le plan PP, n'existe pas encore (seul `tools/hooks/session_start.py` est présent).
+- **Hook de formatage à l'édition** : le test de bout en bout dans Claude Code (critère C2 manuel, risque R8) reste à faire ; voir les limites dans [`hook-format-on-edit.md`](hook-format-on-edit.md).
 - **Vérification du dépôt** : que `just fmt-check` renvoie 0 sur l'état actuel n'est pas consigné par cette page ; le plan PP le demande comme critère d'acceptation de E5.
 
 ## Liens
