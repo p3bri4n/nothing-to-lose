@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# Git pre-commit hook (decision D1 of docs/plans/PP.md): runs `just pre-commit`
+# (gitleaks on the staged changes, then the documentation link check) through mise.
+#
+# Closed by default: if mise or gitleaks cannot be found, the commit is refused.
+# Bypass (at your own risk, `just secrets-scan` and the CI still catch secrets):
+#   git commit --no-verify
+# See docs/technique/hooks-git.md.
+set -euo pipefail
+
+die() {
+  {
+    echo "pre-commit: commit refused."
+    printf 'pre-commit: %s\n' "$@"
+    echo "pre-commit: (emergency only: git commit --no-verify, then run 'just secrets-scan')"
+  } >&2
+  exit 1
+}
+
+cd "$(git rev-parse --show-toplevel)"
+
+if command -v mise >/dev/null 2>&1; then
+  mise_bin="$(command -v mise)"
+elif [[ -x "${HOME:-}/.local/bin/mise" ]]; then
+  mise_bin="$HOME/.local/bin/mise"
+else
+  die "mise not found in PATH nor in ~/.local/bin/mise." \
+    "Install it (https://mise.jdx.dev), then run 'just setup'."
+fi
+
+if ! gitleaks_check="$("$mise_bin" exec -- gitleaks version 2>&1)"; then
+  die "gitleaks is not available through mise:" "$gitleaks_check" \
+    "Run 'just setup' (mise install), and 'mise trust' if mise asks for it."
+fi
+
+exec "$mise_bin" exec -- just pre-commit

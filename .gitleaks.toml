@@ -1,0 +1,9 @@
+# gitleaks configuration (decision D2 of docs/plans/PP.md).
+# Extends the default rules without any broad allowlist. A false positive is
+# handled by its fingerprint in .gitleaksignore, never by a whole directory.
+# See docs/technique/hooks-git.md.
+
+title = "Nothing To Lose"
+
+[extend]
+useDefault = true

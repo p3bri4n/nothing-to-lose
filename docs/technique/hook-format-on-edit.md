@@ -1,6 +1,6 @@
 # Hook PostToolUse : formatage automatique à l'édition
 
-*Mise à jour : 2026-11-07 (création, étape E6 du plan PP, voir [`../plans/PP.md`](../plans/PP.md) §E6 et le risque R8 ; durcissement après la revue d'architecte : garde de la configuration, groupe de processus, configuration prettier imposée)*
+*Mise à jour : 2026-11-07 (résultats de l'essai de bout en bout de C2 ; création, étape E6 du plan PP, voir [`../plans/PP.md`](../plans/PP.md) §E6 et le risque R8 ; durcissement après la revue d'architecte : garde de la configuration, groupe de processus, configuration prettier imposée)*
 
 ## Rôle
 
@@ -99,11 +99,22 @@ Incidents consignés : formateur en échec (code de sortie et fin de sa sortie, 
 4. Si le hook ne s'est pas déclenché : consulter `.cache/hooks/format.log` (refus de la garde, `mise` introuvable…).
 5. Supprimer `e2e_format_probe.py`.
 
-**Matcher à confirmer par cet essai.** `Write|Edit|MultiEdit` est lu par Claude Code comme une liste exacte de trois noms d'outils. La documentation consultée ne cite pas d'outil `MultiEdit` : si l'outil n'existe plus, ce nom est inoffensif ; l'essai ci-dessus confirme `Write` et `Edit`, les seuls utiles. Ce test n'a **pas encore été fait** (il demande une session interactive).
+**Matcher.** `Write|Edit|MultiEdit` est lu par Claude Code comme une liste exacte de trois noms d'outils. La documentation consultée ne cite pas d'outil `MultiEdit` : si l'outil n'existe plus, ce nom est inoffensif. L'essai a confirmé `Write` et `Edit`, les seuls utiles.
+
+### Résultats de l'essai de bout en bout (2026-11-07, session principale)
+
+Essai fait en local, dans la session principale de Claude Code, avec le fichier de sonde `e2e_format_probe.py` :
+
+- **`Write`** : le fichier écrit mal formaté a été reformaté par le hook (matcher confirmé pour `Write`).
+- **`Edit` suivant, sans relecture** : une modification par `Edit` du fichier déjà reformaté par le hook, **sans le relire** entre-temps, a été **acceptée** par Claude Code. Le risque **R8** (refus d'éditer un fichier modifié sous les pieds de l'outil) **n'a pas été observé**.
+- **Sous-agent `executant`** : le hook s'est déclenché aussi pour un fichier écrit par un sous-agent `executant`.
+- **Journal** : aucun message d'erreur dans `.cache/hooks/format.log`.
+- **`MultiEdit`** : **non testé** (l'outil n'est pas cité par la documentation consultée).
+- **Prise en compte de la configuration** : le hook était actif **sans redémarrage de la session** après l'ajout de la section `hooks` à `.claude/settings.json`.
 
 ## Limites connues
 
-- **Test de bout en bout non fait** : voir ci-dessus.
+- **Test de bout en bout** : fait le 2026-11-07 (voir ci-dessus) ; `MultiEdit` reste non testé, et R8 n'a été observé ni pour `Write` ni pour `Edit`.
 - Le formatage passe par `mise exec --` (voir `tools/fmt.py`) : chaque édition coûte un lancement de mise, et un `mise` absent du `PATH` de Claude Code produit une ligne de journal au lieu d'un formatage.
 - Un formateur qui échoue sur une erreur de syntaxe laisse le fichier tel quel et journalise l'échec ; Claude n'en est pas informé.
 - Un seul fichier est traité par appel : les modifications faites par d'autres outils (`Bash`, `sed`) ne déclenchent pas le hook.
