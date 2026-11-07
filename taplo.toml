@@ -1,0 +1,10 @@
+# TOML formatting (E5). Run through tools/fmt.py.
+[formatting]
+indent_string = "  "
+column_width = 88
+reorder_keys = false
+reorder_arrays = false
+align_entries = false
+array_auto_expand = true
+array_auto_collapse = true
+trailing_newline = true

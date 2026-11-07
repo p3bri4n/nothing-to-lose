@@ -24,19 +24,18 @@ shots:
 
 # P1 — partie headless : just sim --seed 42 --minutes 10 --out runs/42/
 sim *ARGS:
-    @echo "à venir (P1) : runner headless ({{ARGS}})" && exit 1
+    @echo "à venir (P1) : runner headless ({{ ARGS }})" && exit 1
 
-# P1 — tests, non-régression, invariants, mini-partie
-check:
-    @echo "à venir (P1)" && exit 1
+# PP/P1 — contrôle complet : pour l'instant `lint` seul ; P1 y ajoute tests, non-régression, invariants, mini-partie
+check: lint
 
 # P2 — inspecter un agent : just inspect --seed 42 --tick 5320 --agent z123
 inspect *ARGS:
-    @echo "à venir (P2) ({{ARGS}})" && exit 1
+    @echo "à venir (P2) ({{ ARGS }})" && exit 1
 
 # P2 — lot de parties et rapport : just eval --seeds 50
 eval *ARGS:
-    @echo "à venir (P2) ({{ARGS}})" && exit 1
+    @echo "à venir (P2) ({{ ARGS }})" && exit 1
 
 # PP — vérifier que les outils installés correspondent à mise.toml (--ci si CI=true)
 versions:
@@ -46,14 +45,30 @@ versions:
 tools-test:
     python -m unittest discover -s tools/tests
 
+# PP — formater tous les fichiers suivis par Git (tools/fmt.py ; Markdown exclu)
+fmt:
+    python3 tools/fmt.py --write
+
+# PP — vérifier le formatage sans rien modifier (les fixtures de tools/tests/fixtures/format/ sont exclues)
+fmt-check:
+    python3 tools/fmt.py --check
+
+# PP — vérifier les liens relatifs de la documentation
+docs-links:
+    python3 tools/check_links.py
+
+# À venir : secrets-scan (E7) et actionlint (E8), à ajouter à `lint` dans leurs étapes.
+# PP — contrôles statiques : versions, tests des outils, formatage, liens, Terraform
+lint: versions tools-test fmt-check docs-links tf-check
+
 # --- Infrastructure GitHub (Terraform) ---
 # État local hors dépôt (décision 0002). Le jeton GitHub vient de GITHUB_TOKEN.
 tf_state := env_var_or_default("TF_STATE_PATH", env_var("HOME") + "/.local/share/terraform/nothing-to-lose/terraform.tfstate")
 
 # Initialiser Terraform (une fois, ou après un changement de provider)
 tf-init:
-    mkdir -p "$(dirname '{{tf_state}}')"
-    cd infra/terraform && terraform init -reconfigure -backend-config="path={{tf_state}}"
+    mkdir -p "$(dirname '{{ tf_state }}')"
+    cd infra/terraform && terraform init -reconfigure -backend-config="path={{ tf_state }}"
 
 # Vérifier le format et la validité
 tf-check:
