@@ -2,19 +2,22 @@
 
 The unit tests are hermetic: no formatter is ever executed (``subprocess.run`` is
 mocked). One integration test runs the real formatters on the badly formatted
-fixtures when ``mise`` and the tools are available, and is skipped otherwise.
+fixtures; each fixture is reported as skipped (with the reason) when ``mise`` or the
+formatter is not available.
 
-Run with: ``python -m unittest discover -s tools/tests`` (or ``just tools-test``).
+Run with: ``python3 -m unittest discover -s tools/tests`` (or ``just tools-test``).
 """
 
 from __future__ import annotations
 
 import contextlib
+import functools
 import io
 import pathlib
 import shutil
 import subprocess
 import sys
+import tempfile
 import unittest
 from unittest import mock
 
@@ -157,11 +160,11 @@ class BuildCommandTest(unittest.TestCase):
         )
         self.assertEqual(
             self.command("shfmt", "write", f),
-            ["mise", "exec", "--", "shfmt", "-w", "a"],
+            ["mise", "exec", "--", "shfmt", "-i", "2", "-ci", "-w", "a"],
         )
         self.assertEqual(
             self.command("shfmt", "check", f),
-            ["mise", "exec", "--", "shfmt", "-d", "a"],
+            ["mise", "exec", "--", "shfmt", "-i", "2", "-ci", "-d", "a"],
         )
         self.assertEqual(
             self.command("prettier", "write", f),
@@ -191,11 +194,11 @@ class RunFormatterTest(unittest.TestCase):
 
     def run_with(self, **kwargs) -> tuple[bool, str]:
         stderr = io.StringIO()
-        with mock.patch.object(subprocess, "run", **kwargs) as run:
-            with contextlib.redirect_stderr(stderr):
-                ok = fmt.run_formatter(
-                    fmt.FORMATTERS["ruff"], "check", ["a.py"], self.ROOT
-                )
+        with (
+            mock.patch.object(subprocess, "run", **kwargs) as run,
+            contextlib.redirect_stderr(stderr),
+        ):
+            ok = fmt.run_formatter(fmt.FORMATTERS["ruff"], "check", ["a.py"], self.ROOT)
         self.assertEqual(run.call_count, 1)
         self.last_call = run.call_args
         return ok, stderr.getvalue()
@@ -228,12 +231,66 @@ class RunFormatterTest(unittest.TestCase):
         ok, _ = self.run_with(side_effect=PermissionError())
         self.assertFalse(ok)
 
+    def test_generic_os_error_fails_with_its_class_name(self) -> None:
+        ok, err = self.run_with(side_effect=OSError(8, "Exec format error"))
+        self.assertFalse(ok)
+        self.assertIn("cannot run ruff (OSError)", err)
+
+    def test_write_failure_message(self) -> None:
+        stderr = io.StringIO()
+        with (
+            mock.patch.object(subprocess, "run", return_value=completed(2)),
+            contextlib.redirect_stderr(stderr),
+        ):
+            ok = fmt.run_formatter(fmt.FORMATTERS["ruff"], "write", ["a.py"], self.ROOT)
+        self.assertFalse(ok)
+        self.assertIn("ruff failed (exit 2, 1 file(s))", stderr.getvalue())
+
+
+class ResolveExplicitTest(unittest.TestCase):
+    def test_resolves_relative_to_the_current_directory(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = pathlib.Path(tmp).resolve()
+            (root / "sub").mkdir()
+            (root / "sub" / "a.py").write_text("")
+            with contextlib.chdir(root / "sub"):
+                paths, errors = fmt.resolve_explicit(["a.py", "../sub/a.py"], root)
+        self.assertEqual(paths, ["sub/a.py", "sub/a.py"])
+        self.assertEqual(errors, [])
+
+    def test_file_outside_the_root_is_kept_absolute(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            base = pathlib.Path(tmp).resolve()
+            (base / "root").mkdir()
+            outside = base / "b.py"
+            outside.write_text("")
+            paths, errors = fmt.resolve_explicit([str(outside)], base / "root")
+        self.assertEqual(paths, [outside.as_posix()])
+        self.assertEqual(errors, [])
+
+    def test_missing_file_and_directory_are_errors_and_others_are_kept(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = pathlib.Path(tmp).resolve()
+            (root / "ok.py").write_text("")
+            (root / "adir").mkdir()
+            raw = [str(root / "missing.py"), str(root / "adir"), str(root / "ok.py")]
+            paths, errors = fmt.resolve_explicit(raw, root)
+        self.assertEqual(paths, ["ok.py"])
+        self.assertEqual(
+            errors,
+            [f"error: not a file: {raw[0]}", f"error: not a file: {raw[1]}"],
+        )
+
+    def test_empty_input(self) -> None:
+        self.assertEqual(fmt.resolve_explicit([], pathlib.Path("/repo")), ([], []))
+
 
 class MainTest(unittest.TestCase):
     def run_main(self, argv: list[str], **patches) -> tuple[int, mock.Mock]:
         with contextlib.ExitStack() as stack:
             stack.enter_context(contextlib.redirect_stdout(io.StringIO()))
-            stack.enter_context(contextlib.redirect_stderr(io.StringIO()))
+            self.stderr = io.StringIO()
+            stack.enter_context(contextlib.redirect_stderr(self.stderr))
             run = stack.enter_context(
                 mock.patch.object(subprocess, "run", return_value=completed(0))
             )
@@ -243,15 +300,19 @@ class MainTest(unittest.TestCase):
         return code, run
 
     def test_mode_is_required(self) -> None:
-        with contextlib.redirect_stderr(io.StringIO()):
-            with self.assertRaises(SystemExit) as ctx:
-                fmt.main([])
+        with (
+            contextlib.redirect_stderr(io.StringIO()),
+            self.assertRaises(SystemExit) as ctx,
+        ):
+            fmt.main([])
         self.assertEqual(ctx.exception.code, 2)
 
     def test_modes_are_mutually_exclusive(self) -> None:
-        with contextlib.redirect_stderr(io.StringIO()):
-            with self.assertRaises(SystemExit) as ctx:
-                fmt.main(["--write", "--check"])
+        with (
+            contextlib.redirect_stderr(io.StringIO()),
+            self.assertRaises(SystemExit) as ctx,
+        ):
+            fmt.main(["--write", "--check"])
         self.assertEqual(ctx.exception.code, 2)
 
     def test_without_paths_uses_tracked_files_and_excludes_fixtures(self) -> None:
@@ -266,7 +327,38 @@ class MainTest(unittest.TestCase):
         commands = [call.args[0] for call in run.call_args_list]
         self.assertEqual(len(commands), 2)  # ruff and taplo only
         self.assertIn("tools/fmt.py", commands[0])
-        self.assertNotIn("tools/tests/fixtures/format/bad.py", sum(commands, []))
+        all_args = [arg for command in commands for arg in command]
+        self.assertNotIn("tools/tests/fixtures/format/bad.py", all_args)
+
+    def test_write_mode_runs_the_write_commands(self) -> None:
+        code, run = self.run_main(
+            ["--write"], tracked_files=lambda root: ["a.py", "b.sh"]
+        )
+        self.assertEqual(code, 0)
+        commands = [call.args[0] for call in run.call_args_list]
+        self.assertEqual(
+            commands,
+            [
+                ["mise", "exec", "--", "ruff", "format", "a.py"],
+                ["mise", "exec", "--", "shfmt", "-i", "2", "-ci", "-w", "b.sh"],
+            ],
+        )
+
+    def test_git_listing_failure_gives_exit_1_and_runs_nothing(self) -> None:
+        failures = (
+            subprocess.CalledProcessError(128, ["git", "ls-files"]),
+            FileNotFoundError("git"),
+        )
+        for failure in failures:
+            with self.subTest(failure=type(failure).__name__):
+
+                def broken(root: pathlib.Path, failure=failure) -> list[str]:
+                    raise failure
+
+                code, run = self.run_main(["--check"], tracked_files=broken)
+                self.assertEqual(code, 1)
+                self.assertIn("cannot list Git files", self.stderr.getvalue())
+                run.assert_not_called()
 
     def test_no_rust_file_runs_no_rustfmt(self) -> None:
         code, run = self.run_main(
@@ -314,34 +406,37 @@ class MainTest(unittest.TestCase):
         run.assert_not_called()
 
 
+@functools.cache
+def formatter_available(tool: str) -> bool:
+    """True if ``mise exec -- <tool> --version`` works (computed once per tool)."""
+    try:
+        proc = subprocess.run(
+            ["mise", "exec", "--", tool, "--version"],
+            cwd=fmt.REPO_ROOT,
+            capture_output=True,
+            timeout=60,
+            check=False,
+        )
+    except subprocess.SubprocessError:
+        return False
+    except OSError:
+        return False
+    return proc.returncode == 0
+
+
 @unittest.skipUnless(shutil.which("mise"), "mise is not installed")
 class FixtureIntegrationTest(unittest.TestCase):
     """Run the real formatters: every badly formatted fixture must be detected."""
 
-    @classmethod
-    def available(cls, tool: str) -> bool:
-        try:
-            proc = subprocess.run(
-                ["mise", "exec", "--", tool, "--version"],
-                cwd=fmt.REPO_ROOT,
-                capture_output=True,
-                timeout=60,
-                check=False,
-            )
-        except (OSError, subprocess.SubprocessError):
-            return False
-        return proc.returncode == 0
-
     def test_each_fixture_is_detected_as_unformatted(self) -> None:
         fixtures = sorted(p for p in FIXTURES_DIR.iterdir() if p.is_file())
         self.assertTrue(fixtures, "no fixture found")
-        checked = 0
         for path in fixtures:
-            formatter = fmt.formatter_for(path.name)
-            self.assertIsNotNone(formatter, path.name)
-            if not self.available(formatter.name):
-                continue
             with self.subTest(fixture=path.name):
+                formatter = fmt.formatter_for(path.name)
+                self.assertIsNotNone(formatter, path.name)
+                if not formatter_available(formatter.name):
+                    self.skipTest(f"{formatter.name} is not available through mise")
                 relative = fmt.display_path(path, fmt.REPO_ROOT)
                 command = fmt.build_command(formatter, "check", [relative])
                 proc = subprocess.run(
@@ -354,9 +449,6 @@ class FixtureIntegrationTest(unittest.TestCase):
                 self.assertNotEqual(
                     proc.returncode, 0, f"{relative} should be reported as unformatted"
                 )
-                checked += 1
-        if checked == 0:
-            self.skipTest("no formatter available")
 
 
 if __name__ == "__main__":

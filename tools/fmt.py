@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Format (or check the formatting of) the repository files.
 
-Usage: python tools/fmt.py (--write | --check) [paths...]  (from anywhere)
+Usage: python3 tools/fmt.py (--write | --check) [paths...]  (from anywhere)
 
 - This file is the single source of the mapping "extension -> formatter"
   (``FORMATTERS`` and ``EXTENSIONS`` below). Markdown is deliberately excluded
@@ -60,7 +60,12 @@ FORMATTERS: dict[str, Formatter] = {
             ("terraform", "fmt"),
             ("terraform", "fmt", "-check", "-diff"),
         ),
-        Formatter("shfmt", ("shfmt", "-w"), ("shfmt", "-d")),
+        # Explicit style (2 spaces, indented case), same as .editorconfig [*.sh].
+        Formatter(
+            "shfmt",
+            ("shfmt", "-i", "2", "-ci", "-w"),
+            ("shfmt", "-i", "2", "-ci", "-d"),
+        ),
         # prettier is installed by mise (no package.json at the root).
         Formatter("prettier", ("prettier", "--write"), ("prettier", "--check")),
     )

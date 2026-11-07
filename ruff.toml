@@ -1,8 +1,8 @@
-# Formatting only (E5): no lint rules are enabled here.
+# Formatting settings only.
 # The formatter is run through tools/fmt.py (single source of the formatter mapping).
 line-length = 88
 indent-width = 4
-target-version = "py311"
+target-version = "py314"
 
 [format]
 quote-style = "double"

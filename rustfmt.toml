@@ -1,4 +1,4 @@
-# Rust formatting (E5). To be reconfirmed at P1 when the first crate lands.
+# Rust formatting. To be reconfirmed at P1 when the first crate lands.
 edition = "2024"
 max_width = 100
 newline_style = "Unix"

@@ -39,19 +39,21 @@ eval *ARGS:
 
 # PP — vérifier que les outils installés correspondent à mise.toml (--ci si CI=true)
 versions:
-    python tools/check_tool_versions.py {{ if env_var_or_default("CI", "") == "true" { "--ci" } else { "" } }}
+    python3 tools/check_tool_versions.py {{ if env_var_or_default("CI", "") == "true" { "--ci" } else { "" } }}
 
 # PP — tests des outils du dépôt (tools/tests)
 tools-test:
-    python -m unittest discover -s tools/tests
+    python3 -m unittest discover -s tools/tests
 
-# PP — formater tous les fichiers suivis par Git (tools/fmt.py ; Markdown exclu)
+# PP — formater tous les fichiers suivis par Git (tools/fmt.py ; Markdown exclu) et le justfile
 fmt:
     python3 tools/fmt.py --write
+    just --fmt --unstable
 
-# PP — vérifier le formatage sans rien modifier (les fixtures de tools/tests/fixtures/format/ sont exclues)
+# PP — vérifier le formatage (fichiers suivis et justfile) sans rien modifier ; les fixtures de tools/tests/fixtures/format/ sont exclues
 fmt-check:
     python3 tools/fmt.py --check
+    just --fmt --check --unstable
 
 # PP — vérifier les liens relatifs de la documentation
 docs-links:

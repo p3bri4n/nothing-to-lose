@@ -1,4 +1,4 @@
-# TOML formatting (E5). Run through tools/fmt.py.
+# TOML formatting. Run through tools/fmt.py.
 [formatting]
 indent_string = "  "
 column_width = 88
