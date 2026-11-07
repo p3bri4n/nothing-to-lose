@@ -23,7 +23,7 @@ Les vérifications passent par `tools/verify_pp.sh`, appelé par `just verify-pp
 | # | Critère | Commande | Résultat attendu |
 |---|---|---|---|
 | C1 | Un commit contenant un faux secret est bloqué | `just verify-pp secrets` | Dans un dépôt temporaire, le commit d'un fichier contenant un jeton factice **généré à l'exécution** échoue (sortie gitleaks « leaks found ») et `HEAD` reste inchangé. Un commit témoin sans secret passe. Un lien Markdown cassé bloque aussi le commit. Après un commit forcé par `--no-verify`, `just secrets-scan` (la commande lancée par la CI) détecte le secret et renvoie 1. Sortie finale : `OK C1`, code 0. |
-| C2 | Une modification de fichier est formatée automatiquement | `just verify-pp format`, puis un test de bout en bout manuel en local | Pour chaque fixture mal formatée de `tools/tests/fixtures/format/` (`.py`, `.toml`, `.tf`, `.sh`, `.yaml`, `.json`, `.rs`), on envoie au hook `PostToolUse` le JSON `{"tool_name":"Write","tool_input":{"file_path":…}}`. Le fichier, copié au préalable, est modifié et passe ensuite le `--check` du formateur. Un fichier `.md` reste inchangé. Bout en bout : dans une session Claude Code locale, on demande l'écriture de `.cache/verify-pp/e2e.py` avec `x=1;y= 2`. Une fois relu, le fichier contient `x = 1` et `y = 2` sur deux lignes. |
+| C2 | Une modification de fichier est formatée automatiquement | `just verify-pp format`, puis un test de bout en bout manuel en local | Pour chaque fixture mal formatée de `tools/tests/fixtures/format/` (`.py`, `.toml`, `.tf`, `.sh`, `.yaml`, `.json`, `.rs`), on envoie au hook `PostToolUse` le JSON `{"tool_name":"Write","tool_input":{"file_path":…}}`. Le fichier, copié au préalable, est modifié et passe ensuite le `--check` du formateur. Un fichier `.md` reste inchangé. Bout en bout (manuel, en local) : dans une session Claude Code lancée à la racine du dépôt, avec `mise` dans son `PATH`, demander d'écrire `e2e_format_probe.py` **à la racine** (chemin non ignoré par Git) avec `x=1;y= 2`. Une fois relu, le fichier contient `x = 1` et `y = 2` sur deux lignes, et `.cache/hooks/format.log` n'a pas de nouvelle ligne. Demander ensuite, par `Edit`, de remplacer `y = 2` par `y = 3` : la modification doit aboutir, au besoin après une relecture du fichier (observation de R8, à noter avec la durée ressentie). Refaire l'essai confié à un sous-agent (`executant`). Supprimer le fichier ; `git status` est propre. Le critère ne change pas, seul le fichier d'essai change (décision [0020](../decisions/0020-securite-hook-formatage.md)). |
 | C3 | Une pull request de test passe la CI avec la liste de contrôle remplie | `just verify-pp pr <numéro>` | `gh pr view <n> --json body,statusCheckRollup` donne `ci-cpu` = `SUCCESS` et aucune case `- [ ]` dans la section « Liste de contrôle ». Contre-épreuve : avec une case décochée sur la même PR, `ci-cpu` échoue et affiche « Liste de contrôle incomplète ». |
 | C4 | Mêmes versions d'outils en local et en CI | `just versions` (en local) et l'étape `just versions` de `ci-cpu`, puis `just verify-pp versions` | Dans les deux environnements, `tools/check_tool_versions.py` affiche `OK : N outils conformes à mise.toml et rust-toolchain.toml` et renvoie 0. `verify-pp versions` contrôle en plus que la liste vérifiée en local est exactement celle de `mise.toml` et que chaque outil répond à la version figée. La CI fait le même contrôle sur les mêmes fichiers. Les outils marqués « local seulement », comme Claude Code, ne sont pas vérifiés en CI. |
 
@@ -159,8 +159,9 @@ Chaque étape se vérifie indépendamment. La sous-commande de `verify_pp.sh` qu
 - **Comportement** :
   - **ne bloque jamais** : renvoie toujours 0 ;
   - un formateur absent ou une erreur de syntaxe produit une ligne dans `.cache/hooks/format.log` ;
-  - désactivable avec `NTL_FORMAT_HOOK=off`.
-- **Vérification** : `just verify-pp format` (C2, partie automatique), puis le test de bout en bout de C2 **en local**. Point à observer : Claude Code accepte-t-il sans erreur une modification ultérieure d'un fichier reformaté par le hook (R8) ?
+  - désactivable avec `NTL_FORMAT_HOOK=off` ;
+  - **garde de configuration** (décision [0020](../decisions/0020-securite-hook-formatage.md), option c) : le hook refuse de formater tant que `mise.toml`, `mise.local.toml`, `.prettierrc.json` ou `rust-toolchain.toml` diffèrent de HEAD. Configuration Prettier imposée via `--config`, pas d'installation automatique par mise, processus formateur tué à l'expiration du délai.
+- **Vérification** : `just verify-pp format` (C2, partie automatique), puis le test de bout en bout de C2 **en local** (procédure et fichier d'essai à la racine décrits en C2). Point à observer : Claude Code accepte-t-il sans erreur une modification ultérieure d'un fichier reformaté par le hook (R8) ?
 
 ### E7 — Hooks Git avant commit et gitleaks
 
@@ -247,7 +248,7 @@ Chaque étape se vérifie indépendamment. La sous-commande de `verify_pp.sh` qu
 - **Commandes** :
   - `just verify-pp all` (`secrets`, `format`, `versions`) ;
   - `just verify-pp pr <n>` sur une PR de test (modification triviale de la documentation, liste de contrôle remplie), puis la contre-épreuve ;
-  - test de bout en bout de C2 en local ;
+  - test de bout en bout de C2 en local (procédure de C2, fichier d'essai à la racine, hors `.cache/`) ;
   - contrôle que l'étape `just versions` de `ci-cpu` est verte.
 - **Livrable** : compte rendu avec les sorties des commandes, remis au `documentaliste`.
 

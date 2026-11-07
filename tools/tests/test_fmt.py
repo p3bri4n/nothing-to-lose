@@ -13,6 +13,7 @@ from __future__ import annotations
 import contextlib
 import functools
 import io
+import json
 import pathlib
 import shutil
 import subprocess
@@ -26,6 +27,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 import fmt
 
 FIXTURES_DIR = pathlib.Path(__file__).resolve().parent / "fixtures" / "format"
+PRETTIER_CONFIG = str(fmt.REPO_ROOT / ".prettierrc.json")
 
 
 def completed(returncode: int = 0, stdout: str = "") -> subprocess.CompletedProcess:
@@ -168,11 +170,42 @@ class BuildCommandTest(unittest.TestCase):
         )
         self.assertEqual(
             self.command("prettier", "write", f),
-            ["mise", "exec", "--", "prettier", "--write", "a"],
+            [
+                "mise",
+                "exec",
+                "--",
+                "prettier",
+                "--write",
+                "--config",
+                PRETTIER_CONFIG,
+                "a",
+            ],
         )
         self.assertEqual(
             self.command("prettier", "check", f),
-            ["mise", "exec", "--", "prettier", "--check", "a"],
+            [
+                "mise",
+                "exec",
+                "--",
+                "prettier",
+                "--check",
+                "--config",
+                PRETTIER_CONFIG,
+                "a",
+            ],
+        )
+
+    def test_only_prettier_forces_a_config_file(self) -> None:
+        for name, formatter in fmt.FORMATTERS.items():
+            for mode in ("write", "check"):
+                command = fmt.build_command(formatter, mode, ["x"])
+                self.assertEqual("--config" in command, name == "prettier", name)
+
+    def test_prettier_config_is_taken_from_the_given_root(self) -> None:
+        root = pathlib.Path("/some/root")
+        command = fmt.build_command(fmt.FORMATTERS["prettier"], "write", ["a"], root)
+        self.assertEqual(
+            command[command.index("--config") + 1], "/some/root/.prettierrc.json"
         )
 
     def test_files_stay_single_arguments(self) -> None:
@@ -449,6 +482,52 @@ class FixtureIntegrationTest(unittest.TestCase):
                 self.assertNotEqual(
                     proc.returncode, 0, f"{relative} should be reported as unformatted"
                 )
+
+
+@unittest.skipUnless(shutil.which("mise"), "mise is not installed")
+class PrettierConfigIsolationTest(unittest.TestCase):
+    """A ``prettier.config.js`` next to a formatted file must never be executed."""
+
+    def test_booby_trapped_config_next_to_the_file_is_not_executed(self) -> None:
+        if not formatter_available("prettier"):
+            self.skipTest("prettier is not available through mise")
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = pathlib.Path(tmp).resolve()
+            witness = directory / "witness.txt"
+            (directory / "prettier.config.js").write_text(
+                f'require("fs").writeFileSync({json.dumps(str(witness))}, "run");\n'
+                "module.exports = {};\n",
+                encoding="utf-8",
+            )
+            target = directory / "x.js"
+            prettier = fmt.FORMATTERS["prettier"]
+
+            def run(command: list[str]) -> subprocess.CompletedProcess:
+                target.write_text("const   a  =  1\n", encoding="utf-8")
+                return subprocess.run(
+                    command,
+                    cwd=fmt.REPO_ROOT,
+                    capture_output=True,
+                    text=True,
+                    timeout=120,
+                    check=False,
+                )
+
+            # Control: without --config the trap fires, so the test proves something.
+            control = ["mise", "exec", "--", "prettier", "--write", str(target)]
+            proc = run(control)
+            self.assertEqual(proc.returncode, 0, proc.stderr)
+            self.assertTrue(witness.exists(), "the control run must execute the trap")
+            witness.unlink()
+
+            proc = run(fmt.build_command(prettier, "write", [str(target)]))
+            self.assertEqual(proc.returncode, 0, proc.stderr)
+            self.assertFalse(witness.exists(), "the trapped config was executed")
+            self.assertEqual(target.read_text(encoding="utf-8"), "const a = 1;\n")
+
+            proc = run(fmt.build_command(prettier, "check", [str(target)]))
+            self.assertNotEqual(proc.returncode, 0)  # unformatted: reported, not run
+            self.assertFalse(witness.exists(), "the trapped config was executed")
 
 
 if __name__ == "__main__":

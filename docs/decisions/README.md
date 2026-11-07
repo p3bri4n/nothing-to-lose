@@ -27,6 +27,7 @@ Les décisions antérieures à la création du dépôt sont dans le journal des 
 | [0017](0017-accroche-le-speech.md) | 2026-11-05 | Accroche : le speech officiel, signature « commandez avec brio ! » (remplace 0006) | décidée |
 | [0018](0018-image-principale-key-art.md) | 2026-11-05 | Image principale du jeu : `docs/assets/key-art.png` (style réaliste non décidé comme direction artistique) | décidée |
 | [0019](0019-accroche-command-humanity-last-hope.md) | 2026-11-05 | Accroche courte officielle : « Command humanity's last hope » (sous-titre du key art ; complète 0017) | décidée |
+| [0020](0020-securite-hook-formatage.md) | 2026-11-07 | Sécurité du hook de formatage : refus si `mise.toml`, `mise.local.toml`, `.prettierrc.json` ou `rust-toolchain.toml` diffèrent de HEAD | décidée |
 
 Statuts possibles : `en attente` (question posée, pas encore de réponse), `décidée`, `remplacée par NNNN`.
 
