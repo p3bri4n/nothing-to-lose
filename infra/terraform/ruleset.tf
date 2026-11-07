@@ -13,12 +13,13 @@ resource "github_repository_ruleset" "default_branch" {
     }
   }
 
-  # Le propriétaire (rôle « admin » du dépôt) peut contourner les règles en cas d'urgence.
+  # Le propriétaire (rôle « admin » du dépôt) ne pousse jamais directement sur la branche principale :
+  # il passe par une pull request, qu'il peut fusionner en contournant la CI en cas d'urgence.
   # actor_id 5 = rôle de dépôt « admin » : à vérifier si GitHub change ces identifiants.
   bypass_actors {
     actor_id    = 5
     actor_type  = "RepositoryRole"
-    bypass_mode = "always"
+    bypass_mode = "pull_request"
   }
 
   rules {
