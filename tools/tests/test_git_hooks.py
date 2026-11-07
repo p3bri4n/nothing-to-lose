@@ -157,6 +157,16 @@ class HookBehaviourTest(unittest.TestCase):
         self.assertIn("commit refused", result.stderr)
         self.assertFalse(self.head_exists(), "no commit must have been created")
 
+    def test_refusal_does_not_suggest_no_verify_to_agents(self) -> None:
+        # Agents read this message: the bypass is for the user in an emergency only.
+        for stub in (False, True):
+            if stub:
+                self.write_stub_mise(self.bin, gitleaks_ok=False)
+            result = self.git("commit", "-q", "-m", "x")
+            self.assertNotEqual(result.returncode, 0)
+            self.assertNotIn("--no-verify", result.stderr)
+            self.assertIn("user only", result.stderr)
+
     def test_refuses_commit_when_gitleaks_is_missing(self) -> None:
         log = self.write_stub_mise(self.bin, gitleaks_ok=False)
         result = self.git("commit", "-q", "-m", "x")

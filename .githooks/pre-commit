@@ -3,8 +3,9 @@
 # (gitleaks on the staged changes, then the documentation link check) through mise.
 #
 # Closed by default: if mise or gitleaks cannot be found, the commit is refused.
-# Bypass (at your own risk, `just secrets-scan` and the CI still catch secrets):
-#   git commit --no-verify
+# Bypass reserved to the user (emergency only, at your own risk; `just secrets-scan`
+# and the CI still catch secrets). Agents never bypass this hook: the Bash guard
+# (tools/hooks/guard_bash.py) refuses `--no-verify`.
 # See docs/technique/hooks-git.md.
 set -euo pipefail
 
@@ -12,7 +13,8 @@ die() {
   {
     echo "pre-commit: commit refused."
     printf 'pre-commit: %s\n' "$@"
-    echo "pre-commit: (emergency only: git commit --no-verify, then run 'just secrets-scan')"
+    echo "pre-commit: fix the cause above and commit again (never bypass this hook)."
+    echo "pre-commit: (emergency, user only: bypassing the hook then needs 'just secrets-scan')"
   } >&2
   exit 1
 }

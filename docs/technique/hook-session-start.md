@@ -1,6 +1,6 @@
 # Hook SessionStart : résumé de « où on en est »
 
-*Mise à jour : 2026-11-05 (ajout du hook à la demande de l'utilisateur, hors périmètre initial de PP, voir [`../plans/PP.md`](../plans/PP.md) §8)*
+*Mise à jour : 2026-11-07 (avertissement sur les erreurs du garde-fou Bash, décision [0022](../decisions/0022-panne-garde-bash.md) ; création : 2026-11-05, ajout du hook à la demande de l'utilisateur, hors périmètre initial de PP, voir [`../plans/PP.md`](../plans/PP.md) §8)*
 
 Recherche sur le format du hook et ses limites : [`../recherches/2026-11-05-hook-sessionstart.md`](../recherches/2026-11-05-hook-sessionstart.md).
 
@@ -39,6 +39,16 @@ Le script écrit un unique objet JSON sur stdout :
 
 L'état Git comprend : la branche courante, le dernier commit (`git log -1`, format `%h %s`), le nombre de lignes de `git status --short` (fichiers modifiés et non suivis), et un avertissement si aucun remote n'est configuré. Une commande Git en échec ou absente affiche « ? ».
 
+### Avertissement sur le garde-fou Bash
+
+Le script compte les lignes qui contiennent `hook error` dans `.cache/hooks/guard.log` (le journal du hook `PreToolUse` [`guard_bash.py`](garde-fous-bash.md)). Quand le nombre est supérieur à 0, une ligne est ajoutée à la fin des **deux** sorties (`systemMessage` et `additionalContext`) :
+
+```
+Garde-fou Bash : 3 ligne(s) « hook error » dans .cache/hooks/guard.log (le garde-fou a échoué ; les commandes git/gh sont refusées dans ce cas). Voir docs/technique/garde-fous-bash.md ; prévenir l'utilisateur.
+```
+
+Raison (décision [0022](../decisions/0022-panne-garde-bash.md)) : quand le garde-fou est en panne, il refuse les commandes `git` et `gh` ; l'utilisateur doit en être informé dès l'ouverture de la session. Le journal n'est jamais effacé par ce hook (il est borné par rotation vers `guard.log.1`, qui n'est pas lu) : le compteur ne retombe à 0 que si l'utilisateur supprime ou vide `guard.log` après avoir traité la cause. Journal absent, illisible ou sans ligne `hook error` : rien n'est affiché.
+
 ## Dernier journal
 
 - Fichiers pris : `docs/journal/AAAA-MM-JJ-*.md`, dont le nom commence par une date (`README.md` est exclu).
@@ -60,4 +70,4 @@ En cas d'erreur inattendue, le script renvoie « Résumé de session indisponibl
 
 - **Affichage non vérifié** : trois issues GitHub (#98162, #96699, #80882) signalent que `systemMessage` d'un hook SessionStart peut ne pas apparaître selon l'interface (TUI par défaut, VS Code, application de bureau, après `/clear`). Le comportement n'a pas été vérifié avec Claude Code 2.1.318. **À tester à la prochaine ouverture.** Si le message n'apparaît pas, le contexte injecté permet tout de même de demander « où en est-on ? ».
 - **Forme de commande** : la recherche recommandait la forme exec (champ `args`, sans shell). La configuration actuelle utilise la forme shell avec guillemets doubles, plus simple à lire ; elle a le même effet sur le chemin du dépôt.
-- Aucun test automatisé du script n'est recensé dans le dépôt à ce jour.
+- Tests : `tools/tests/test_session_start.py` couvre le compte des lignes `hook error` et la présence de l'avertissement dans les deux sorties (JSON produit par le vrai script, dossier de projet jetable). Le reste du résumé (journal, état Git) n'a pas de test automatisé.

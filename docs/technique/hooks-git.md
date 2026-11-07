@@ -48,11 +48,11 @@ just setup          # mise install, puis just hooks-install
 just hooks-install  # git config core.hooksPath .githooks
 ```
 
-`core.hooksPath` est une configuration **locale** du clone : elle n'est pas versionnée. Un clone neuf n'a pas de hook tant que `just hooks-install` n'a pas été lancée. La CI, elle, relance `secrets-scan` sans dépendre du poste du développeur (à brancher à l'étape E9 du plan ; à la date de cette page `ci.yml` n'appelle pas encore mise).
+`core.hooksPath` est une configuration **locale** du clone : elle n'est pas versionnée. Un clone neuf n'a pas de hook tant que `just hooks-install` n'a pas été lancée. La CI, elle, relance `secrets-scan` sans dépendre du poste du développeur (job `ci-cpu`, étape E9 : mise installe gitleaks, historique complet avec `fetch-depth: 0`).
 
 ## Contourner le hook : `git commit --no-verify`
 
-`--no-verify` désactive le hook : le commit part sans aucune vérification. À réserver à une urgence réelle. Conséquences :
+`--no-verify` désactive le hook : le commit part sans aucune vérification. **Réservé à l'utilisateur, en cas d'urgence réelle** : le message de refus du hook ne le suggère plus, et le garde-fou Bash des agents refuse `--no-verify` et `-n` ([`garde-fous-bash.md`](garde-fous-bash.md)). Conséquences :
 
 - un secret engagé ainsi **est dans l'historique** ; le détecter ne l'en retire pas. Lancer `just secrets-scan` tout de suite, et si un vrai secret est trouvé : le **révoquer** (le considérer comme compromis), puis réécrire l'historique local **avant** tout `push` ;
 - une fois poussé sur un dépôt public, un secret reste visible (références de PR, caches) même après suppression : seule la révocation compte ;
@@ -86,11 +86,11 @@ Sortie finale : `OK C1` (ou `OK C1 (partial: ...)` si le contrôle 6 est sauté)
 
 ## Tests unitaires
 
-`tools/tests/test_git_hooks.py` (lancé par `just tools-test`). Hermétique : le vrai `mise` est remplacé par un script factice qui journalise ses arguments. Vérifie : hook exécutable, shebang, syntaxe (`bash -n`), mode `100755` dans l'index Git (sauté tant que le hook n'est pas suivi), `.gitleaks.toml` (extension des règles par défaut, aucune liste blanche), recettes du `justfile` ; et, dans un dépôt jetable dont le chemin contient un espace : commit refusé sans mise, refusé si gitleaks est indisponible, accepté avec les appels `exec -- gitleaks version` puis `exec -- just pre-commit`, repli sur `~/.local/bin/mise`, refus quand seul `just pre-commit` échoue (le journal du faux mise contient bien cet appel), contournement par `--no-verify`.
+`tools/tests/test_git_hooks.py` (lancé par `just tools-test`). Hermétique : le vrai `mise` est remplacé par un script factice qui journalise ses arguments. Vérifie : hook exécutable, shebang, syntaxe (`bash -n`), mode `100755` dans l'index Git (sauté tant que le hook n'est pas suivi), `.gitleaks.toml` (extension des règles par défaut, aucune liste blanche), recettes du `justfile` ; et, dans un dépôt jetable dont le chemin contient un espace : commit refusé sans mise, refusé si gitleaks est indisponible, accepté avec les appels `exec -- gitleaks version` puis `exec -- just pre-commit`, repli sur `~/.local/bin/mise`, refus quand seul `just pre-commit` échoue (le journal du faux mise contient bien cet appel), message de refus sans `--no-verify`, contournement par `--no-verify`.
 
 ## Limites connues
 
-- Le hook ne couvre que les commits faits avec ce clone : `--no-verify`, un autre clone sans `just hooks-install` ou une modification faite depuis l'interface web y échappent. La CI (`secrets-scan`, étape E9) est le filet de sécurité.
+- Le hook ne couvre que les commits faits avec ce clone : `--no-verify`, un autre clone sans `just hooks-install` ou une modification faite depuis l'interface web y échappent. La CI (`secrets-scan` dans `ci-cpu`) est le filet de sécurité.
 - gitleaks détecte des motifs connus (règles par défaut) : un secret sans forme reconnaissable (mot de passe libre) n'est pas vu.
 - gitleaks est « feature complete » : ses mainteneurs ne publient plus que des correctifs de sécurité. Un successeur, betterleaks, existe (voir [`../recherches/2026-11-05-outillage-pp.md`](../recherches/2026-11-05-outillage-pp.md) §4 et la décision 0008). La décision n'est pas rouverte ; à réévaluer si gitleaks cesse d'être maintenu.
 - Les chemins contenant « : » ne sont pas testés : le hook ne dépend pas de `MISE_TRUSTED_CONFIG_PATHS`, mais `just verify-pp secrets` oui (liste séparée par « : »), d'où la garde ci-dessus. Un essai empirique avec mise 2026.11.0 n'a pas été concluant (le dossier était déjà considéré comme sûr).

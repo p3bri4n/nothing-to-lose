@@ -242,6 +242,14 @@ Chaque étape se vérifie indépendamment. La sous-commande de `verify_pp.sh` qu
   Les agents utilisent le jeton U5 (`GH_TOKEN`).
 - **Vérification** : tests unitaires de `guard_bash.py` sur des commandes autorisées et refusées, y compris des variantes comme `git -c x=y commit --no-verify`, `git commit -an` et `gh pr merge --auto`. Puis un essai manuel : quand on demande à Claude un `git commit --no-verify`, il est refusé avec une explication.
 
+**Scission E10 / E10b (décision de l'utilisateur, 2026-11-07, fiche [0021](../decisions/0021-fusion-compte-machine-agents.md)).** E10 garde les garde-fous (hook `guard_bash.py`, règles `deny`, tests, documentation). La fusion par les agents n'est pas traitée dans E10 : elle fait l'objet de **E10b**, PR séparée :
+
+- Terraform : `required_approving_review_count = 1` dans `ruleset.tf` (aujourd'hui `0`) ; variable `agents_account` ; ajout du compte machine comme collaborateur avec le rôle *Write* (pas administrateur) ;
+- jeton à granularité fine **du compte machine**, qui remplace U5 (*Contents*, *Pull requests* et *Issues* en écriture ; jamais rattaché au compte propriétaire) ;
+- actions de l'utilisateur : créer le compte machine, accepter l'invitation, créer le jeton, lancer `just tf-apply`.
+
+Jusqu'à E10b, la fusion n'est protégée que par le hook et la discipline des agents. La mention « les agents utilisent le jeton U5 » ci-dessus vaut jusqu'à E10b.
+
 ### E11 — Vérification finale
 
 - **Agent** : `testeur`.

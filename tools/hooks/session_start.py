@@ -5,6 +5,9 @@ Reads the latest development journal entry (docs/journal/), the last commit and
 the Git state, then prints a JSON object on stdout:
   - systemMessage: shown to the user at session start (next steps only);
   - hookSpecificOutput.additionalContext: injected in the model context (also open issues).
+It also warns when the Bash guard (guard_bash.py) logged failures: the number of
+``hook error`` lines of ``.cache/hooks/guard.log`` (decision U2: a failing guard refuses
+git/gh commands, so the user must hear about it).
 Never fails: any error yields a short message and exit code 0.
 """
 
@@ -24,6 +27,19 @@ def git(root: pathlib.Path, *args: str) -> str:
         return out.stdout.strip()
     except Exception:
         return ""
+
+
+GUARD_LOG = pathlib.Path(".cache") / "hooks" / "guard.log"
+GUARD_ERROR_MARKER = "hook error"
+
+
+def guard_error_count(root: pathlib.Path) -> int:
+    """Number of ``hook error`` lines in the Bash guard log (0 if absent or unreadable)."""
+    try:
+        text = (root / GUARD_LOG).read_text(encoding="utf-8", errors="replace")
+    except Exception:
+        return 0
+    return sum(1 for line in text.splitlines() if GUARD_ERROR_MARKER in line)
 
 
 def latest_journal(root: pathlib.Path):
@@ -74,6 +90,14 @@ def build(root: pathlib.Path, full: bool) -> str:
     remotes = git(root, "remote")
     if not remotes:
         lines.append("Aucun remote configuré (premier push pas encore fait).")
+    errors = guard_error_count(root)
+    if errors > 0:
+        lines.append(
+            f"Garde-fou Bash : {errors} ligne(s) « hook error » dans "
+            f"{GUARD_LOG.as_posix()} (le garde-fou a échoué ; les commandes git/gh sont "
+            "refusées dans ce cas). Voir docs/technique/garde-fous-bash.md ; prévenir "
+            "l'utilisateur."
+        )
     return "\n".join(lines)
 
 

@@ -67,6 +67,8 @@
 - **[Décidé]** Nom du projet : **Nothing To Lose** (décision [0016](../decisions/0016-nom-nothing-to-lose.md), qui remplace « Say Again »). Toulouse seulement dans le nom public. La ville est une donnée : rien de spécifique à Toulouse n'est codé en dur hors des données de la carte.
 - **[Décidé]** Commandant local d'abord ; invités à distance plus tard.
 - **[Décidé]** CI/CD : GitHub configuré par Terraform (état local), dépôt public, runner GPU auto-hébergé hors pull requests, viewer sur Cloudflare Pages.
+- **[Décidé]** Circuit Git des agents : seul l'utilisateur fusionne les pull requests ; les agents ouvrent leurs pull requests avec un compte machine (rôle Write), le ruleset exige 1 approbation, et l'utilisateur fusionne comme administrateur (décision [0021](../decisions/0021-fusion-compte-machine-agents.md), mise en œuvre en E10b). En attendant E10b, la fusion n'est protégée que par le garde-fou local et la discipline des agents.
+- **[Décidé]** Garde-fou Bash des agents : en cas de panne, refus limité aux commandes `git` et `gh`, avec affichage du nombre d'erreurs à l'ouverture de session (décision [0022](../decisions/0022-panne-garde-bash.md), non encore codée) ; périmètre d'E10 conservé, garde sur Edit et Write reporté à la refonte des agents (décision [0023](../decisions/0023-perimetre-garde-bash.md)).
 
 ## Modèle d'IA
 
