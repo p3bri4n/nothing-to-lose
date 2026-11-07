@@ -11,6 +11,7 @@ Usage: tools/verify_pp.sh <subcommand> [args...]
 Subcommands:
   versions   Check installed tool versions against mise.toml
   format     Check the PostToolUse formatting hook (C2, automatic part)
+  secrets    Check the Git pre-commit hook and gitleaks in a temporary repository (C1)
 USAGE
 }
 
@@ -154,6 +155,185 @@ cmd_format() {
   return "$status"
 }
 
+# C1 (E7): the Git pre-commit hook blocks a commit that contains a secret or a broken
+# documentation link, accepts a clean one, and `just secrets-scan` finds a secret that
+# slipped in with --no-verify. Everything happens in a temporary repository (mktemp -d)
+# holding copies of .githooks/, .gitleaks.toml, justfile, mise.toml and tools/.
+# The fake token is generated here, at run time: it is written only inside the
+# temporary repository (deleted on exit by the trap), never in the real repository,
+# never printed, never pushed.
+cmd_secrets() {
+  local status=0 mise_bin repo token head out code partial=0
+  local gitenv=(env GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_SYSTEM=/dev/null
+    GIT_AUTHOR_NAME=verify GIT_AUTHOR_EMAIL=verify@example.invalid
+    GIT_COMMITTER_NAME=verify GIT_COMMITTER_EMAIL=verify@example.invalid)
+
+  if command -v mise >/dev/null 2>&1; then
+    mise_bin="$(command -v mise)"
+  elif [[ -x ${HOME:-}/.local/bin/mise ]]; then
+    mise_bin="$HOME/.local/bin/mise"
+  else
+    echo "FAILED C1: mise not found" >&2
+    return 1
+  fi
+
+  # `tmp` is global on purpose: the EXIT trap runs after the function has returned.
+  tmp="$(mktemp -d)"
+  trap 'rm -rf "$tmp"' EXIT
+  # A space in the path checks the quoting of the hook and of the recipes.
+  repo="$tmp/repo with space"
+  # MISE_TRUSTED_CONFIG_PATHS is a ':'-separated list: a path containing ':' cannot be trusted.
+  if [[ $repo == *:* ]]; then
+    echo "FAILED C1: the temporary path contains ':' (set TMPDIR to a path without ':')" >&2
+    return 1
+  fi
+  mkdir -p "$repo/docs"
+  cp -R "$root/.githooks" "$root/tools" "$repo/"
+  cp "$root/.gitleaks.toml" "$root/justfile" "$root/mise.toml" "$repo/"
+  rm -rf "$repo/tools/__pycache__" "$repo/tools/hooks/__pycache__" "$repo/tools/tests/__pycache__"
+  printf '# Docs\n\nNo link here.\n' >"$repo/docs/README.md"
+  export MISE_TRUSTED_CONFIG_PATHS="$repo"
+
+  git_repo() { "${gitenv[@]}" git -C "$repo" "$@"; }
+  in_repo() { (cd "$repo" && "${gitenv[@]}" "$@"); }
+
+  # Token: provider prefix followed by random alphanumerics (36, like a GitHub PAT).
+  token="ghp_$(python3 -c 'import secrets, string; print("".join(secrets.choice(string.ascii_letters + string.digits) for _ in range(36)))')"
+
+  git_repo init -q
+  git_repo config core.hooksPath .githooks
+
+  # Run `git commit` in the temporary repository; sets $out (stdout and stderr) and $code.
+  try_commit() {
+    code=0
+    out="$(git_repo commit -q "$@" 2>&1)" || code=$?
+  }
+  # No leaked token in what the tools printed.
+  no_token_in_output() {
+    if [[ $out == *"$token"* ]]; then
+      echo "FAIL $1: the token appears in the output (--redact not effective)" >&2
+      status=1
+    fi
+  }
+
+  # 0. Baseline commit: the hook accepts a clean repository (and runs on 'mise exec').
+  git_repo add -A
+  try_commit -m "baseline"
+  if [[ $code -ne 0 ]]; then
+    echo "FAIL baseline: the clean commit was refused (exit $code): $out" >&2
+    echo "FAILED C1" >&2
+    return 1
+  fi
+  echo "ok   baseline commit accepted by the hook"
+
+  # 1. Clean history: secrets-scan passes.
+  code=0
+  out="$(in_repo "$mise_bin" exec -- just secrets-scan 2>&1)" || code=$?
+  if [[ $code -ne 0 ]]; then
+    echo "FAIL secrets-scan on a clean history: exit $code: $out" >&2
+    status=1
+  else
+    echo "ok   secrets-scan passes on a clean history"
+  fi
+
+  # 2. A commit containing the token is blocked.
+  head="$(git_repo rev-parse HEAD)"
+  printf 'token = "%s"\n' "$token" >"$repo/leak.txt"
+  git_repo add leak.txt
+  try_commit -m "leak"
+  if [[ $code -eq 0 || "$(git_repo rev-parse HEAD)" != "$head" ]]; then
+    echo "FAIL leak: the commit containing a secret was not blocked" >&2
+    status=1
+  elif [[ $out != *"leaks found"* ]]; then
+    echo "FAIL leak: refused, but not by gitleaks: $out" >&2
+    status=1
+  else
+    echo "ok   commit with a secret blocked"
+  fi
+  no_token_in_output "leak"
+
+  # 3. Witness commit: without the secret, the commit is accepted.
+  git_repo rm -q --cached leak.txt
+  rm -f "$repo/leak.txt"
+  printf 'hello\n' >"$repo/witness.txt"
+  git_repo add witness.txt
+  try_commit -m "witness"
+  if [[ $code -ne 0 ]]; then
+    echo "FAIL witness: a clean commit was refused (exit $code): $out" >&2
+    status=1
+  else
+    echo "ok   witness commit accepted"
+  fi
+
+  # 4. A broken documentation link blocks the commit.
+  head="$(git_repo rev-parse HEAD)"
+  printf '[broken](does-not-exist.md)\n' >"$repo/docs/broken.md"
+  git_repo add docs/broken.md
+  try_commit -m "broken link"
+  if [[ $code -eq 0 || "$(git_repo rev-parse HEAD)" != "$head" ]]; then
+    echo "FAIL broken link: the commit was not blocked" >&2
+    status=1
+  elif [[ $out != *"does-not-exist.md"* ]]; then
+    echo "FAIL broken link: refused, but not because of the link: $out" >&2
+    status=1
+  else
+    echo "ok   commit with a broken link blocked"
+  fi
+  git_repo rm -q --cached docs/broken.md
+  rm -f "$repo/docs/broken.md"
+
+  # 5. Closed by default: without mise (empty HOME, minimal PATH), the commit is refused.
+  if PATH=/usr/bin:/bin command -v mise >/dev/null 2>&1; then
+    echo "SKIP closed by default: mise is in /usr/bin or /bin on this machine" >&2
+    partial=1
+  else
+    head="$(git_repo rev-parse HEAD)"
+    printf 'another\n' >"$repo/another.txt"
+    git_repo add another.txt
+    code=0
+    out="$(HOME="$tmp/empty-home" PATH=/usr/bin:/bin "${gitenv[@]}" git -C "$repo" commit -q -m "no mise" 2>&1)" || code=$?
+    if [[ $code -eq 0 || "$(git_repo rev-parse HEAD)" != "$head" ]]; then
+      echo "FAIL closed by default: the commit passed without mise" >&2
+      status=1
+    elif [[ $out != *"mise not found"* ]]; then
+      echo "FAIL closed by default: refused, but without the expected message: $out" >&2
+      status=1
+    else
+      echo "ok   closed by default: commit refused when mise is missing"
+    fi
+    git_repo rm -q --cached another.txt
+    rm -f "$repo/another.txt"
+  fi
+
+  # 6. --no-verify lets the secret in; secrets-scan then detects it.
+  printf 'token = "%s"\n' "$token" >"$repo/leak.txt"
+  git_repo add leak.txt
+  try_commit --no-verify -m "leak, bypassing the hook"
+  if [[ $code -ne 0 ]]; then
+    echo "FAIL --no-verify: the commit failed (exit $code): $out" >&2
+    status=1
+  else
+    code=0
+    out="$(in_repo "$mise_bin" exec -- just secrets-scan 2>&1)" || code=$?
+    if [[ $code -eq 0 ]]; then
+      echo "FAIL secrets-scan: the secret committed with --no-verify was not detected" >&2
+      status=1
+    else
+      echo "ok   --no-verify bypasses the hook, secrets-scan detects the secret"
+    fi
+    no_token_in_output "secrets-scan"
+  fi
+
+  if [[ $status -eq 0 && $partial -eq 1 ]]; then
+    echo "OK C1 (partial: closed-by-default check skipped)"
+  elif [[ $status -eq 0 ]]; then
+    echo "OK C1"
+  else
+    echo "FAILED C1" >&2
+  fi
+  return "$status"
+}
+
 if [[ $# -lt 1 ]]; then
   usage
   exit 2
@@ -164,6 +344,7 @@ shift
 case "$sub" in
   versions) cmd_versions "$@" ;;
   format) cmd_format "$@" ;;
+  secrets) cmd_secrets "$@" ;;
   *)
     echo "verify_pp.sh: unknown subcommand '$sub'" >&2
     usage

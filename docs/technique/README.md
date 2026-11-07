@@ -14,6 +14,7 @@ Décrit le code **tel qu'il existe**, pas tel qu'il est prévu (le prévu est da
 - [`ci-cd.md`](ci-cd.md) — Terraform, CI, runner GPU, déploiement (disponible)
 - [`hook-session-start.md`](hook-session-start.md) — hook SessionStart : résumé de l'état du projet à l'ouverture de Claude Code (disponible)
 - [`hook-format-on-edit.md`](hook-format-on-edit.md) — hook PostToolUse : formatage automatique du fichier que Claude vient d'écrire ou de modifier (`tools/hooks/format_on_edit.py`) (disponible)
+- [`hooks-git.md`](hooks-git.md) — hook Git `pre-commit` (gitleaks sur les changements indexés, liens de la documentation), recettes `hooks-install`, `pre-commit`, `secrets-scan`, contournement `--no-verify`, faux positifs (disponible)
 - [`outillage.md`](outillage.md) — source unique des versions (`mise.toml`, `rust-toolchain.toml`), formatage (`tools/fmt.py`, `just fmt`, `just fmt-check`, configurations), `just lint`, `just versions`, `just tools-test`, `tools/verify_pp.sh`, procédure de mise à jour (disponible)
 
 Chaque page indique en tête la date de sa dernière mise à jour.

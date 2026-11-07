@@ -7,9 +7,10 @@ set positional-arguments
 default:
     @just --list
 
-# PP — installer les outils aux versions figées de mise.toml (les hooks Git s'ajoutent à l'étape E7)
+# PP — installer les outils aux versions figées de mise.toml, puis activer les hooks Git
 setup:
     mise install
+    just hooks-install
 
 # P0 — extraire et préparer la carte du centre de Toulouse (OSM)
 bake:
@@ -64,9 +65,22 @@ fmt-check:
 docs-links:
     python3 tools/check_links.py
 
-# À venir : secrets-scan (E7) et actionlint (E8), à ajouter à `lint` dans leurs étapes.
-# PP — contrôles statiques : versions, tests des outils, formatage, liens, Terraform
-lint: versions tools-test fmt-check docs-links tf-check
+# PP — activer les hooks Git du dépôt (.githooks/) : action locale, à faire une fois par clone
+hooks-install:
+    git config core.hooksPath .githooks
+
+# PP — contrôles du hook pre-commit : secrets dans les changements indexés (gitleaks), puis liens de la documentation
+pre-commit:
+    gitleaks git --pre-commit --staged --redact
+    "{{ just_executable() }}" docs-links
+
+# PP — chercher des secrets dans tout l'historique Git (gitleaks ; utilisée aussi par la CI)
+secrets-scan:
+    gitleaks git --redact
+
+# À venir : actionlint (E8), à ajouter à `lint` dans son étape.
+# PP — contrôles statiques : versions, tests des outils, formatage, liens, secrets, Terraform
+lint: versions tools-test fmt-check docs-links secrets-scan tf-check
 
 # --- Infrastructure GitHub (Terraform) ---
 # État local hors dépôt (décision 0002). Le jeton GitHub vient de GITHUB_TOKEN.
