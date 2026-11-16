@@ -73,6 +73,7 @@
 - **[Décidé]** Identifiants du propriétaire : cible, les agents n'agissent que dans Claudeus (conteneur sans identifiants du propriétaire, `GH_TOKEN` du compte machine injecté) ; le sandbox devient le prérequis d'une barrière réelle ; mesures intérimaires sur l'hôte en attendant, date à fixer par l'utilisateur (décision [0026](../decisions/0026-isolement-identifiants-claudeus.md), qui précise 0015).
 - **[Décidé]** Pas de portée `workflow` pour le jeton des agents : l'agent prépare le changement de workflow, l'utilisateur le pousse (décision [0027](../decisions/0027-portee-workflow-jamais.md), qui précise 0024).
 - **[Décidé]** Garde Bash étendu aux identifiants GitHub : refus de `gh auth token|login|logout|switch|refresh`, de `gh auth status --show-token` et des affectations ou retraits de `GH_TOKEN`, `GITHUB_TOKEN` et variantes Enterprise ; palliatif partiel (décision [0028](../decisions/0028-garde-bash-identifiants-github.md), qui étend 0023).
+- **[Décidé]** Infrastructure agentique : Claudeus se limite à l'isolation (conteneur, pare-feu, montages, identifiants) ; l'infrastructure générique (agents, garde-fous, circuit Git, module Terraform, modèles) est extraite vers un projet `jeanclaude`, public dès le départ, après E10b et E11 ; livraison par resynchronisation à la demande ; `nothing-to-lose` reste consommateur (décision [0029](../decisions/0029-extraction-jeanclaude.md), qui précise 0015). La date de l'adaptation de Claudeus reste à fixer.
 
 ## Modèle d'IA
 

@@ -4,6 +4,8 @@
 >
 > Réponses déjà données par l'utilisateur : le `developpeur` est **conservé pour les étapes isolées** ; une **file `docs/blockers.md`** est retenue ; la refonte ne commence **qu'après E10** (la fin d'E10 et d'E10b est atteinte, E11 et E12 restent). Un **plan de migration** reste à écrire et à soumettre à l'utilisateur avant toute modification des agents ou de `CLAUDE.md`.
 >
+> Renvoi (2026-11-16) : l'infrastructure agentique générique doit être extraite vers un projet `jeanclaude` après E11 (décision [0029](../decisions/0029-extraction-jeanclaude.md)). Le plan de migration devra tenir compte de ce déplacement ; cette note ne modifie pas le texte de la proposition.
+>
 > Écarts connus avec l'existant du dépôt (à traiter dans le plan de migration) : les dossiers s'appellent `docs/decisions`, `docs/technique` et `docs/journal` (et non `adr`, `tech`) ; les hooks du projet sont en Python (`guard_bash.py`, `format_on_edit.py`) ; le cœur de la simulation est en Rust (les règles de déterminisme du §8 passent par `clippy` et le test de rejeu, non par des motifs Python) ; `CLAUDE.md` porte aussi les règles d'infrastructure et de CI, qui doivent rester toujours chargées. Voir l'entrée de journal [2026-11-07-circuit-ci-agents.md](../journal/2026-11-07-circuit-ci-agents.md).
 
 ---

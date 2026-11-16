@@ -12,7 +12,8 @@
 | Q33 | Durée et bruit d'un essai de porte sur un bâtiment inconnu | Quelques secondes ; forcer = bruyant, discret = plus long | [19](19-quartiers-batiments.md) |
 | Q31 | Antenne et armoire de piratage au même endroit, ou séparées ? | Séparées : deux objectifs distincts par quartier | [19](19-quartiers-batiments.md) |
 | — | Capacités réelles de la machine (CPU, débit LLM en parallèle, latence de Laya) | Trois benchmarks à écrire | [03](03-architecture-technique.md) |
-| — | Date de l'adaptation de Claudeus (sandbox), prérequis de l'isolement des identifiants du propriétaire et d'une barrière réelle contre les agents (décision [0026](../decisions/0026-isolement-identifiants-claudeus.md)) | À fixer par l'utilisateur, avant tout usage des agents sans surveillance ; un jalon doit la porter | [16](16-jalons.md), [0015](../decisions/0015-sandbox-reporte-apres-pp.md) |
+| — | Date de l'adaptation de Claudeus (sandbox), prérequis de l'isolement des identifiants du propriétaire et d'une barrière réelle contre les agents (décision [0026](../decisions/0026-isolement-identifiants-claudeus.md)). L'adaptation précède E11 (décision [0029](../decisions/0029-extraction-jeanclaude.md)) ; sa date n'est pas fixée | À fixer par l'utilisateur, avant tout usage des agents sans surveillance ; un jalon doit la porter | [16](16-jalons.md), [0015](../decisions/0015-sandbox-reporte-apres-pp.md) |
+| — | Position de l'extraction de l'infrastructure agentique vers `jeanclaude` par rapport à E12 (décision [0029](../decisions/0029-extraction-jeanclaude.md) : après E10b et E11, E12 non précisé) | À confirmer par l'utilisateur avant l'extraction | [0029](../decisions/0029-extraction-jeanclaude.md) |
 
 ## Journal des décisions (revue du 5 novembre 2026)
 
@@ -63,3 +64,9 @@
 | — | Isolement des identifiants du propriétaire | Cible : agents seulement dans Claudeus (conteneur sans identifiants du propriétaire, `GH_TOKEN` du compte machine injecté) ; mesures intérimaires sur l'hôte ; précise [0015](../decisions/0015-sandbox-reporte-apres-pp.md) — décision [0026](../decisions/0026-isolement-identifiants-claudeus.md) |
 | — | Portée `workflow` du jeton des agents | Jamais : l'agent prépare le changement de workflow, l'utilisateur le pousse — décision [0027](../decisions/0027-portee-workflow-jamais.md), qui précise [0024](../decisions/0024-jeton-compte-machine-classique.md) |
 | — | Garde Bash et identifiants GitHub | Étendu : refus de `gh auth token`, `gh auth login`…, de `gh auth status --show-token` et des affectations ou retraits de `GH_TOKEN`, `GITHUB_TOKEN` et variantes Enterprise ; palliatif partiel — décision [0028](../decisions/0028-garde-bash-identifiants-github.md), qui étend [0023](../decisions/0023-perimetre-garde-bash.md) |
+
+## Journal des décisions (suite, 16 novembre 2026)
+
+| # | Question | Décision |
+|---|---|---|
+| — | Infrastructure agentique et Claudeus | Claudeus limité à l'isolation (conteneur, pare-feu, montages, identifiants), avec points d'extension par projet ; nouveau projet `jeanclaude` pour la méthode et l'infrastructure génériques, public dès le départ (contre la recommandation « privé au départ ») ; extraction après E10b et E11, livraison par resynchronisation à la demande — décision [0029](../decisions/0029-extraction-jeanclaude.md), qui précise [0015](../decisions/0015-sandbox-reporte-apres-pp.md) |

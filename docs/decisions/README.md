@@ -22,7 +22,7 @@ Les décisions antérieures à la création du dépôt sont dans le journal des 
 | [0012](0012-markdown-hors-formatage.md) | 2026-11-05 | Markdown exclu du formatage automatique | décidée |
 | [0013](0013-identite-agents-fusion.md) | 2026-11-05 | Identité GitHub des agents et fusion réservée à l'utilisateur ; précisée par 0021, 0024, 0026, 0028 | décidée |
 | [0014](0014-sequencement-pp.md) | 2026-11-05 | Séquencement de PP : Terraform, puis premier push, puis une PR par étape | décidée |
-| [0015](0015-sandbox-reporte-apres-pp.md) | 2026-11-05 | Sandbox reporté après PP (Claudeus de l'utilisateur) ; précisé par 0026 | décidée |
+| [0015](0015-sandbox-reporte-apres-pp.md) | 2026-11-05 | Sandbox reporté après PP (Claudeus de l'utilisateur) ; précisé par 0026 et 0029 | décidée |
 | [0016](0016-nom-nothing-to-lose.md) | 2026-11-05 | Nom du projet : « Nothing To Lose », Toulouse seulement (remplace 0005) | décidée |
 | [0017](0017-accroche-le-speech.md) | 2026-11-05 | Accroche : le speech officiel, signature « commandez avec brio ! » (remplace 0006) | décidée |
 | [0018](0018-image-principale-key-art.md) | 2026-11-05 | Image principale du jeu : `docs/assets/key-art.png` (style réaliste non décidé comme direction artistique) | décidée |
@@ -36,6 +36,7 @@ Les décisions antérieures à la création du dépôt sont dans le journal des 
 | [0026](0026-isolement-identifiants-claudeus.md) | 2026-11-07 | Isolement des identifiants du propriétaire : agents dans Claudeus comme cible ; mesures intérimaires sur l'hôte (précise 0015) | décidée |
 | [0027](0027-portee-workflow-jamais.md) | 2026-11-07 | Portée `workflow` : jamais pour les agents (précise 0024) | décidée |
 | [0028](0028-garde-bash-identifiants-github.md) | 2026-11-07 | Extension du garde Bash aux identifiants GitHub (`gh auth token`, `GH_TOKEN`, `GITHUB_TOKEN`…) ; étend 0023 | décidée |
+| [0029](0029-extraction-jeanclaude.md) | 2026-11-16 | Extraction de l'infrastructure agentique vers `jeanclaude` (public dès le départ), après E11 ; Claudeus limité à l'isolation | décidée |
 
 Statuts possibles : `en attente` (question posée, pas encore de réponse), `décidée`, `remplacée par NNNN`.
 
