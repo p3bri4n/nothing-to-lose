@@ -13,6 +13,7 @@ Une entrée par session de travail, nommée `AAAA-MM-JJ-sujet.md` (plusieurs ses
 | 2026-11-05 | [Conception initiale et squelette du dépôt](2026-11-05-conception.md) | avant P0 |
 | 2026-11-05 | [Préparation de l'environnement (après-midi)](2026-11-05-pp-preparation.md) | PP |
 | 2026-11-07 | [Amorçage Terraform et installation locale](2026-11-07-amorcage-terraform.md) | PP |
+| 2026-11-07 | [Circuit Git, CI et garde-fous des agents (après-midi et soirée)](2026-11-07-circuit-ci-agents.md) | PP |
 
 ## Modèle d'entrée
 
